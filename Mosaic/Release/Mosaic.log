@@ -5,7 +5,7 @@ e:\mosaic\mosaic\mosaic\main.cpp(151): warning C4244: "argument": konwersja z "d
 e:\mosaic\mosaic\mosaic\main.cpp(165): warning C4305: "argument": obcięcie z "double" do "float"
 e:\mosaic\mosaic\mosaic\main.cpp(237): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
 e:\mosaic\mosaic\mosaic\main.cpp(238): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(241): warning C4018: ">=": niezgodność typu ze znakiem/bez znaku
-e:\mosaic\mosaic\mosaic\main.cpp(256): warning C4244: "argument": konwersja z "double" do "float", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(281): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+e:\mosaic\mosaic\mosaic\main.cpp(241): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+e:\mosaic\mosaic\mosaic\main.cpp(259): warning C4244: "argument": konwersja z "double" do "float", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(284): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
   Mosaic.vcxproj -> E:\Mosaic\Mosaic\Release\Mosaic.exe

@@ -17,7 +17,7 @@
 #include <cmath>
 
 #define MAX_INPUT        512
-#define MAX_CLONES       8192
+#define MAX_CLONES       16384
 #define SCALE            0.01
 #define BRUTYAS_COUNTRY_OF_ORIGIN Not_belarus
 
@@ -222,24 +222,27 @@ int main() {
 	for (int x = 0; x < MAX_CLONES; x++) {
 		
 		
-		if (rowX*SCALE*lw > 1280) {
+		if (rowX*SCALE*lw > sw) {
 			rowX = 0;
 			rowY++;
 		}
 
-		if (rowX*SCALE*lw > 1280 && rowY*SCALE*lh > 720) {
-			done = true;
-			break;
-		}
+//		if (rowX*SCALE*lw > sw && rowY*SCALE*lh > sh) {
+//			done = true;
+//			break;
+//		}
 
 		//we have correct row and column here already.
 
 		int boxX = rowX * SCALE*lw;
 		int boxY = rowY * SCALE*lh;
 
-		if (boxX + 0.5*SCALE*lw >= sw || boxY + 0.5*SCALE*lh >= sh) {
-			if (boxX >= sw && boxY + 1 >= sh) {
+		if (boxX + 0.5*SCALE*lw > sw || boxY + 0.5*SCALE*lh > sh) {
+			if (boxX < sw && boxY < sh) {
 				measure = source.getPixel((int)(boxX), (int)(boxY));
+			}
+			else if((rowY + 1)*SCALE*lh < sh){
+				measure = source.getPixel((int)(0), (int)((rowY+1)*SCALE*lh));
 			}
 			else {
 				break;
