@@ -31,6 +31,7 @@ float distances[MAX_INPUT];
 
 unsigned int maxclones;
 float scale;
+float IS;
 
 
 int getNearest3D(sf::Color source, int scanRange) {
@@ -314,6 +315,17 @@ int main() {
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
+
+			if (event.type == sf::Event::KeyPressed)
+			{
+				if (event.key.code == sf::Keyboard::F11)
+				{
+					sf::Image fuckingScreenshot;
+					fuckingScreenshot = window.capture();
+					fuckingScreenshot.saveToFile("screenshots/screenshot.png");
+				}
+
+			}
 		}
 
 		std::string maximus = "\n3:" + std::to_string(distances[3]) + "\n2:" + std::to_string(distances[2]) + "\n1:" + std::to_string(distances[1]);
