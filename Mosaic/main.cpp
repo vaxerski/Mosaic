@@ -15,6 +15,7 @@
 #include <math.h>
 #include <filesystem>
 #include <cmath>
+#include "INIReader.h"
 
 #define MAX_INPUT        512
 #define MAX_CLONES       50000
@@ -26,6 +27,10 @@ namespace fs = std::filesystem;
 
 sf::Color avg[MAX_INPUT];
 float distances[MAX_INPUT];
+
+
+unsigned int maxclones;
+float scale;
 
 
 int getNearest3D(sf::Color source, int scanRange) {
@@ -57,9 +62,45 @@ int getNearest3D(sf::Color source, int scanRange) {
 
 }
 
+bool parseCFG() {
+	INIReader reader("config.ini");
+	if (reader.ParseError() < 0) {
+		MessageBox(nullptr, TEXT("Couldn't locate config.ini, autogenerating default."), TEXT("Warning"), MB_OK);
+		std::ofstream outfile("config.ini");
+		outfile << "[Mosaic]\nmax_clones = 50000                  ; max amount of images on screen.Increase if mosaic doesnt produce full image.\nprecision_point = 0.05                       ; smaller precision point = more detail, more clones.";
+		outfile.close();
+		INIReader reader("config.ini");
+	}
+
+	maxclones = reader.GetInteger("Mosaic", "max_clones", 0);
+	if (maxclones == 0) {
+		MessageBox(nullptr, TEXT("Couldn't initialize config: error at maxclones. Expected: int"), TEXT("Fatal Error"), MB_OK);
+		return false;
+	}
+	scale = reader.GetReal("Mosaic", "precision_point", 0);
+	if (scale == 0) {
+		MessageBox(nullptr, TEXT("Couldn't initialize config: error at precision_point. Expected: float != 0"), TEXT("Fatal Error"), MB_OK);
+		return false;
+	}
+
+
+	return true; //success
+
+}
+
+
 
 
 int main() {
+
+
+	//parse cfg
+
+
+	if (!parseCFG()) {
+		return 0;
+	}
+
 
 	//load all files' names from directory
 
@@ -162,7 +203,7 @@ int main() {
 
 	for (ij; ij < i; ij++) {
 		sprites[ij].setTexture(Textures[ij]);
-		sprites[ij].setScale(SCALE, SCALE);
+		sprites[ij].setScale(scale, scale);
 	}
 
 //	int bestr = getNearest3D(sf::Color::Red, i);
@@ -209,9 +250,9 @@ int main() {
 
 
 
-	sprite_vector clones(MAX_CLONES);
+	sprite_vector clones(maxclones);
 
-//	DON'T DO THAT   >>>>  sf::Sprite clones[MAX_CLONES];
+//	DON'T DO THAT   >>>>  sf::Sprite clones[maxclones];
 //  your pc wont handle that
 //  It will throw stack overflow error, use dynamic allocation.
 //  sprite_vector typedef is just std::vector<sf::sprite> btw
@@ -219,30 +260,30 @@ int main() {
 
 	sf::Color measure;
 
-	for (int x = 0; x < MAX_CLONES; x++) {
+	for (int x = 0; x < maxclones; x++) {
 		
 		
-		if (rowX*SCALE*lw > sw) {
+		if (rowX*scale*lw > sw) {
 			rowX = 0;
 			rowY++;
 		}
 
-//		if (rowX*SCALE*lw > sw && rowY*SCALE*lh > sh) {
+//		if (rowX*scale*lw > sw && rowY*scale*lh > sh) {
 //			done = true;
 //			break;
 //		}
 
 		//we have correct row and column here already.
 
-		int boxX = rowX * SCALE*lw;
-		int boxY = rowY * SCALE*lh;
+		int boxX = rowX * scale*lw;
+		int boxY = rowY * scale*lh;
 
-		if (boxX + 0.5*SCALE*lw > sw || boxY + 0.5*SCALE*lh > sh) {
+		if (boxX + 0.5*scale*lw > sw || boxY + 0.5*scale*lh > sh) {
 			if (boxX < sw && boxY < sh) {
 				measure = source.getPixel((int)(boxX), (int)(boxY));
 			}
-			else if((rowY + 1)*SCALE*lh < sh){
-				measure = source.getPixel((int)(0), (int)((rowY+1)*SCALE*lh));
+			else if((rowY + 1)*scale*lh < sh){
+				measure = source.getPixel((int)(0), (int)((rowY+1)*scale*lh));
 			}
 			else {
 				break;
@@ -250,13 +291,13 @@ int main() {
 			
 		}
 		else {
-			measure = source.getPixel((int)(boxX + 0.5*SCALE*lw), (int)(boxY + 0.5*SCALE*lh));
+			measure = source.getPixel((int)(boxX + 0.5*scale*lw), (int)(boxY + 0.5*scale*lh));
 		}
 
 		
 
 		clones[counter] = sprites[getNearest3D(measure, i)];
-		clones[counter].setPosition(rowX*SCALE*lw, rowY*SCALE*lh);
+		clones[counter].setPosition(rowX*scale*lw, rowY*scale*lh);
 		
         
 //		sprites[x].setPosition(rowX*0.1*lw, rowY*0.1*lh);

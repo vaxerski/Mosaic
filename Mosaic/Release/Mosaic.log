@@ -1,11 +1,15 @@
 ﻿  main.cpp
-e:\mosaic\mosaic\mosaic\main.cpp(47): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(150): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(151): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(165): warning C4305: "argument": obcięcie z "double" do "float"
-e:\mosaic\mosaic\mosaic\main.cpp(237): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(238): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(241): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
-e:\mosaic\mosaic\mosaic\main.cpp(259): warning C4244: "argument": konwersja z "double" do "float", możliwa utrata danych
-e:\mosaic\mosaic\mosaic\main.cpp(284): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+e:\mosaic\mosaic\mosaic\inireader.h(163): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\string.h(338): note: zobacz deklarację „strncpy”
+e:\mosaic\mosaic\mosaic\inireader.h(292): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\ucrt\stdio.h(208): note: zobacz deklarację „fopen”
+e:\mosaic\mosaic\mosaic\main.cpp(52): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(80): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(191): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(192): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(263): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+e:\mosaic\mosaic\mosaic\main.cpp(278): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(279): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(282): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+e:\mosaic\mosaic\mosaic\main.cpp(325): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
   Mosaic.vcxproj -> E:\Mosaic\Mosaic\Release\Mosaic.exe
