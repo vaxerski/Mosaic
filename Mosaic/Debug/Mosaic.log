@@ -1,0 +1,12 @@
+﻿  main.cpp
+e:\mosaic\mosaic\mosaic\main.cpp(46): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(149): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(150): warning C4244: "argument": konwersja z "double" do "unsigned int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(164): warning C4305: "argument": obcięcie z "double" do "float"
+e:\mosaic\mosaic\mosaic\main.cpp(226): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(227): warning C4244: "inicjowanie": konwersja z "double" do "int", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(237): warning C4244: "argument": konwersja z "double" do "float", możliwa utrata danych
+e:\mosaic\mosaic\mosaic\main.cpp(262): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+  .NETFramework,Version=v4.7.AssemblyAttributes.cpp
+  main.obj : napotkano moduł MSIL; konsolidowanie przyrostowe jest wyłączone dla modułów MSIL; zostanie wykonana pełna konsolidacja
+  Mosaic.vcxproj -> E:\Mosaic\Mosaic\Debug\Mosaic.exe
