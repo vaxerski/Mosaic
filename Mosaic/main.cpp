@@ -17,7 +17,7 @@
 #include <cmath>
 
 #define MAX_INPUT        512
-#define MAX_CLONES       16384
+#define MAX_CLONES       50000
 #define SCALE            0.01
 #define BRUTYAS_COUNTRY_OF_ORIGIN Not_belarus
 
