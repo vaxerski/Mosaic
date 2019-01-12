@@ -8,6 +8,14 @@ Put one source.png in the folder **with the app**<br/>
 
 Run the app.
 
+Edit the config if anything's wrong.
+
+## Config
+
+`max_clones` - Sets max amount of composites on image.<br/>
+`precision_point` - Sets amount of precision, here the size of one image. Smaller = more precise.
+
+
 ## FAQ
 
 
