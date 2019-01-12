@@ -63,6 +63,27 @@ int getNearest3D(sf::Color source, int scanRange) {
 
 }
 
+int calculateScreenshot() {
+	std::ifstream t("mc.mosc");
+
+	if (!t.good()) {
+		MessageBox(nullptr, TEXT("Screenshot config file missing! this may lead to overwriting and errors in the future."), TEXT("Runtime Warning"), MB_OK);
+		std::ofstream outfile("mc.mosc");
+		outfile << "1";
+		outfile.close();
+	}
+
+	std::string str((std::istreambuf_iterator<char>(t)),
+		std::istreambuf_iterator<char>());
+
+	std::string newstring = str + "1";
+	std::ofstream out("mc.mosc");
+	out << newstring;
+	out.close();
+	
+	return newstring.length();
+}
+
 bool parseCFG() {
 	INIReader reader("config.ini");
 	if (reader.ParseError() < 0) {
@@ -320,9 +341,13 @@ int main() {
 			{
 				if (event.key.code == sf::Keyboard::F11)
 				{
+
 					sf::Image fuckingScreenshot;
 					fuckingScreenshot = window.capture();
-					fuckingScreenshot.saveToFile("screenshots/screenshot.png");
+					std::stringstream filename;
+					filename << "screenshots/screenshot_" << calculateScreenshot() << ".png";
+					fuckingScreenshot.saveToFile(filename.str());
+
 				}
 
 			}
