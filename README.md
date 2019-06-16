@@ -25,7 +25,7 @@ Press `ESC` to close the app when finished.
 
 ## Future Plans
 - [ ] Make a UI
-- [ ] Support for JPEG and different resolutions
+- [x] Support for JPEG and different resolutions
 - [ ] Easier navigation and usage
 - [ ] Do something to the renderer to stop rendering more frames than it has to
 - [ ] Make the code less spaghetti

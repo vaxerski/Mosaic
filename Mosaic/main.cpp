@@ -29,10 +29,22 @@
 #include <math.h>
 #include <filesystem>
 #include <cmath>
-#include "INIReader.h"
 #include <experimental/filesystem>
 #include <Psapi.h>
 #include <sysinfoapi.h>
+#include <dwmapi.h>
+#define WIN32_LEAN_AND_MEAN
+#include <dwmapi.h>
+#include <unknwn.h>
+#include <gdiplus.h>
+#pragma comment( lib, "gdiplus" )
+
+
+
+#include "INIReader.h"
+#include "parsing.h"
+#include "math.h"
+
 
 using namespace std::experimental::filesystem::v1;
 using namespace std::chrono;
@@ -43,6 +55,8 @@ using namespace std::chrono;
 #define BRUTYAS_COUNTRY_OF_ORIGIN Amurica
 #define LOADING_X        480
 #define LOADING_Y        200
+#define LOADING_X_PLUS   520
+#define LOADING_Y_PLUS   240
 #define BILLION          1000000000
 #define MILLION          1000000
 #define DIV              1048576
@@ -67,6 +81,7 @@ bool alphaUp = false;
 static int viewportX;
 static int viewportY;
 static bool cursorsucc = false;
+static float HUE = 0;
 
 image_vector images(MAX_INPUT); //for later averaging
 sprite_vector sprites(MAX_INPUT);
@@ -81,29 +96,15 @@ float or1 = 0 * LOADING_X;
 float or2 = 1 * LOADING_X;
 float or3 = 2 * LOADING_X;
 float or4 = 3 * LOADING_X;
-sf::Color col1bg = sf::Color(81, 81, 81);
+sf::Color col1bg = sf::Color(155, 155, 155);
 sf::Color col2bg = sf::Color(255, 255, 255);
 
 sf::Vertex bganim[] =
 {
-	sf::Vertex(sf::Vector2f(or1,LOADING_Y), col1bg),
-	sf::Vertex(sf::Vector2f(or1,0), col1bg),
-	sf::Vertex(sf::Vector2f(or2,LOADING_Y), col2bg),
-	sf::Vertex(sf::Vector2f(or2,0), col2bg)
-};
-sf::Vertex bganim2[] =
-{
-	sf::Vertex(sf::Vector2f(or2,LOADING_Y), col2bg),
-	sf::Vertex(sf::Vector2f(or2,0), col2bg),
-	sf::Vertex(sf::Vector2f(or3,LOADING_Y), col1bg),
-	sf::Vertex(sf::Vector2f(or3,0), col1bg)
-};
-sf::Vertex bganim3[] =
-{
-	sf::Vertex(sf::Vector2f(or3,LOADING_Y), col1bg),
-	sf::Vertex(sf::Vector2f(or3,0), col1bg),
-	sf::Vertex(sf::Vector2f(or4,LOADING_Y), col2bg),
-	sf::Vertex(sf::Vector2f(or4,0), col2bg)
+	sf::Vertex(sf::Vector2f(20, LOADING_Y + 20), col1bg),
+	sf::Vertex(sf::Vector2f(20, 20), col1bg),
+	sf::Vertex(sf::Vector2f(or2 + 20, 20), col2bg),
+	sf::Vertex(sf::Vector2f(or2 + 20, LOADING_Y + 20), col2bg)
 };
 
 float bgoriginx = -1 * LOADING_X;
@@ -158,26 +159,34 @@ std::wstring s2ws(const std::string& s)
 	return r;
 }
 
-void doBGanim() {
-	now = high_resolution_clock::now();
-	delta = timeorigin - now;
+bool goindown = false;
 
-	bgoriginx = (double)((double)delta.count() / BILLION) * (LOADING_X / 10);
+float3 doBorder() {
+/*	now = high_resolution_clock::now();
+	delta = now - timeorigin;
 
-	bganim[0] = sf::Vertex(sf::Vector2f(or1 + bgoriginx, 0), col1bg);
-	bganim[1] = sf::Vertex(sf::Vector2f(or1 + bgoriginx, LOADING_Y), col1bg);
-	bganim[2] = sf::Vertex(sf::Vector2f(or2 + bgoriginx, LOADING_Y), col2bg);
-	bganim[3] = sf::Vertex(sf::Vector2f(or2 + bgoriginx, 0), col2bg);
+	double deltaa = (double)((double)delta.count() / BILLION) / 1000;
 
-	bganim2[0] = sf::Vertex(sf::Vector2f(or2 + bgoriginx, 0), col2bg);
-	bganim2[1] = sf::Vertex(sf::Vector2f(or2 + bgoriginx, LOADING_Y), col2bg);
-	bganim2[2] = sf::Vertex(sf::Vector2f(or3 + bgoriginx, LOADING_Y), col1bg);
-	bganim2[3] = sf::Vertex(sf::Vector2f(or3 + bgoriginx, 0), col1bg);
+	if (!goindown) {
+		if (deltaa > 10) HUE += 10;
+		else HUE += deltaa;
+	}
+	else {
+		if (deltaa > 10) HUE -= 10;
+		else HUE -= deltaa;
+	}
 
-	bganim3[0] = sf::Vertex(sf::Vector2f(or3 + bgoriginx, 0), col1bg);
-	bganim3[1] = sf::Vertex(sf::Vector2f(or3 + bgoriginx, LOADING_Y), col1bg);
-	bganim3[2] = sf::Vertex(sf::Vector2f(or4 + bgoriginx, LOADING_Y), col2bg);
-	bganim3[3] = sf::Vertex(sf::Vector2f(or4 + bgoriginx, 0), col2bg);
+	float3 result;
+	result = math::hsv2rgb(HUE, 100.f, 100.f);
+
+	if (HUE >= 100.f) goindown = true;
+	if (HUE <= 0.5f)goindown = false;*/
+
+	//something didnt want to work. Try to fix this I'm not going to prolly.
+
+	float3 result = { 57, 239, 115 };
+
+	return result;
 }
 
 void textPulse(bool speeded) {
@@ -283,7 +292,6 @@ int main() {
 	timeorigin = high_resolution_clock::now();
 
 
-
 	//cfg
 
 	if (!parseCFG()) {
@@ -304,6 +312,23 @@ int main() {
 
 	//STAGE 0
 
+	sf::Texture blurry, back;
+	if (!blurry.loadFromFile("./resource/blur.png")) {
+		MessageBox(nullptr, TEXT("UI elements missing! Re-downloading the app should fix this issue."), TEXT("Fatal Error"), MB_OK);
+		return 0;
+	}
+	sf::Sprite blurryS;
+	blurryS.setTexture(blurry);
+	blurryS.setPosition(0, 0);
+
+
+	if (!back.loadFromFile("./resource/back.png")) {
+		MessageBox(nullptr, TEXT("UI elements missing! Re-downloading the app should fix this issue."), TEXT("Fatal Error"), MB_OK);
+		return 0;
+	}
+	sf::Sprite backS;
+	backS.setTexture(back);
+	backS.setPosition(19, 19);
 
 	sf::Text text;
 	sf::Font font;
@@ -327,18 +352,18 @@ int main() {
 	sf::Text bottomcapt;
 	bottomcapt.setFont(font);
 	bottomcapt.setCharacterSize(12);
-	bottomcapt.setColor(sf::Color(57, 239, 115, 200));
+	bottomcapt.setColor(sf::Color(255, 77, 77, 255));
 //	bottomcapt.setOutlineThickness(0.5f);
-//	bottomcapt.setOutlineColor(sf::Color(0, 0, 0, 249));
+//	bottomcapt.setOutlineColor(sf::Color(0, 0, 0, 200));
 	bottomcapt.setString("If the app goes unresponsive, DO NOT close it. It's still running.");
-	bottomcapt.setPosition(LOADING_X / 2 - bottomcapt.getLocalBounds().width / 2, LOADING_Y * 0.9f);
+	bottomcapt.setPosition(LOADING_X_PLUS / 2 - bottomcapt.getLocalBounds().width / 2, LOADING_Y_PLUS * 0.8f);
 	
-	sf::RectangleShape loadingbarbg(sf::Vector2f(LOADING_X * 0.75, LOADING_Y * 0.12));
-	loadingbarbg.setPosition(sf::Vector2f(LOADING_X * 0.125, LOADING_Y * 0.6));
+	sf::RectangleShape loadingbarbg(sf::Vector2f(LOADING_X_PLUS * 0.75, LOADING_Y_PLUS * 0.12));
+	loadingbarbg.setPosition(sf::Vector2f(LOADING_X_PLUS * 0.125, LOADING_Y_PLUS * 0.6));
 	loadingbarbg.setFillColor(sf::Color(50, 50, 50, 60));
 
-	sf::RectangleShape loadingbar(sf::Vector2f(LOADING_X * 0.75, LOADING_Y * 0.12));
-	loadingbar.setPosition(sf::Vector2f(LOADING_X * 0.125, LOADING_Y * 0.6));
+	sf::RectangleShape loadingbar(sf::Vector2f(LOADING_X_PLUS * 0.75, LOADING_Y_PLUS * 0.12));
+	loadingbar.setPosition(sf::Vector2f(LOADING_X_PLUS * 0.125, LOADING_Y_PLUS * 0.6));
 	loadingbar.setFillColor(sf::Color(57, 239, 115, 255));
 
 	//STAGE 1
@@ -364,17 +389,49 @@ int main() {
 	//STAGE 3
 
 	sf::Image source;
-	static unsigned int width, height;
-	static unsigned int sw, sh;
+	static int sw, sh;
+	int type = -1;
+
 	if (!source.loadFromFile("source.png")) {
-		MessageBox(nullptr, TEXT("Couldn't load source.png"), TEXT("Fatal Error"), MB_OK);
+		if (!source.loadFromFile("source.jpeg")) {
+			if (!source.loadFromFile("source.jpg")) {
+				MessageBox(nullptr, TEXT("Couldn't load source.png"), TEXT("Fatal Error"), MB_OK);
+				return 0;
+			}
+			else {
+				type = 3;
+			}
+		}
+		else {
+			type = 2;
+		}
+	}
+	else {
+		type = 1;
+	}
+
+
+	std::string launchPath = parsing::launchPath();
+	std::string sourceP;
+
+	switch (type) {
+	case 1:
+		sourceP = launchPath + "\\source.png";
+		break;
+	case 2:
+		sourceP = launchPath + "\\source.jpeg";
+		break;
+	case 3:
+		sourceP = launchPath + "\\source.jpg";
+		break;
+	}
+
+	parsing::GetImageSize(sourceP.c_str(), &sw, &sh);
+
+	if (sw == 0 || sh == 0) {
+		MessageBox(nullptr, TEXT("Error: source has invalid path. (Maybe it exceeds 260 character limit?)"), TEXT("Fatal Error"), MB_OK);
 		return 0;
 	}
-	std::ifstream in("source.png");
-	in.seekg(16);
-	in.read((char *)&width, 4);
-	in.read((char *)&height, 4);
-
 
 	//STAGE 4
 
@@ -390,8 +447,15 @@ int main() {
 
 	//init loading window.
 	static sf::RenderWindow window;
-	window.create(sf::VideoMode(LOADING_X, LOADING_Y), "Mosaic > Initializing...");
+	window.create(sf::VideoMode(LOADING_X_PLUS, LOADING_Y_PLUS), "Mosaic > Initializing...", sf::Style::None);
 	window.setFramerateLimit(99999);
+
+	MARGINS margins;
+	margins.cxLeftWidth = -1;
+
+	SetWindowLong(window.getSystemHandle(), GWL_STYLE, WS_POPUP | WS_VISIBLE);
+	DwmExtendFrameIntoClientArea(window.getSystemHandle(), &margins);
+
 	sf::Image icon;
 	if (icon.loadFromFile("icon.png")) {
 		iconEnabled = true;
@@ -438,10 +502,10 @@ int main() {
 			loadStage = 1;
 			Stage = "Getting images...";
 			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
+			loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
 
 
-			loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 3, loadingbar.getSize().y));
+			loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 3, loadingbar.getSize().y));
 			break;
 		case 1:
 
@@ -459,45 +523,30 @@ int main() {
 
 						unsigned int width, height;
 						std::string pathh = entry.path().u8string();
-						std::size_t pos = pathh.find("images\\");
-						std::string path_ = pathh.substr(pos);
-
-						std::ifstream in(path_);
-
-						in.seekg(16);
-						in.read((char *)&width, 4);
-						in.read((char *)&height, 4);
-
-						lw = ntohl(width);
-						lh = ntohl(height);
-
-						files[i] = path_;
+						const char* pth = pathh.c_str();
 
 
+						parsing::GetImageSize(pth, &cw, &ch);
 
+						lw = cw;
+						lh = ch;
+
+						files[i] = pathh;
 
 					}
 					else {
 						unsigned int width, height;
 						std::string pathh1 = entry.path().u8string();
-						std::size_t pos1 = pathh1.find("images\\");
-						std::string path_1 = pathh1.substr(pos1);
+						const char* pth1 = pathh1.c_str();
 
-						std::ifstream in(path_1);
-
-						in.seekg(16);
-						in.read((char *)&width, 4);
-						in.read((char *)&height, 4);
-
-						cw = ntohl(width);
-						ch = ntohl(height);
+						parsing::GetImageSize(pth1, &cw, &ch);
 
 						if (cw == lw && ch == lh) {
 
-							files[i] = path_1;
+							files[i] = pathh1;
 						}
 						else {
-							string z = "All textures must be the same size PNG's. Error at: " + pathh1;
+							string z = "All textures must be the same size PNG/JPEG's. Error at: " + (string)pth1;
 							LPCTSTR lp = (LPCTSTR)z.c_str();
 							MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
 							return 0;
@@ -511,8 +560,8 @@ int main() {
 			loadStage = 2;
 			Stage = "Parsing textures...";
 			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-			loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1/2, loadingbar.getSize().y));
+			loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+			loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1/2, loadingbar.getSize().y));
 			break;
 		case 2:
 
@@ -544,19 +593,21 @@ int main() {
 
 				Stage = "Parsing textures... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
 				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-				loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 2, loadingbar.getSize().y));
+				loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+				loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 2, loadingbar.getSize().y));
 
-				doBGanim();
+				float3 values = doBorder();
+
+				backS.setColor(sf::Color(values.x, values.y, values.z, 100.f));
 
 				textPulse(false);
 
 				loadingcapt.setOutlineColor(sf::Color(0, 0, 0, alphaLoad));
 
-				window.clear(sf::Color::White);
+				window.clear(sf::Color::Transparent);
+				window.draw(blurryS);
+				window.draw(backS);
 				window.draw(bganim, 4, sf::Quads);
-				window.draw(bganim2, 4, sf::Quads);
-				window.draw(bganim3, 4, sf::Quads);
 				window.draw(loadingcapt);
 				window.draw(loadingbarbg);
 				window.draw(loadingbar);
@@ -573,19 +624,21 @@ int main() {
 
 				Stage = "Assigning sprites... " + std::to_string(ij + 1) + " of " + std::to_string(i + 1);
 				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-				loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 1.7f, loadingbar.getSize().y));
+				loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+				loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 1.7f, loadingbar.getSize().y));
 
-				doBGanim();
+				float3 values = doBorder();
+
+				backS.setColor(sf::Color(values.x, values.y, values.z, 100.f));
 
 				textPulse(false);
 
 				loadingcapt.setOutlineColor(sf::Color(0, 0, 0, alphaLoad));
 
-				window.clear(sf::Color::White);
+				window.clear(sf::Color::Transparent);
+				window.draw(blurryS);
+				window.draw(backS);
 				window.draw(bganim, 4, sf::Quads);
-				window.draw(bganim2, 4, sf::Quads);
-				window.draw(bganim3, 4, sf::Quads);
 				window.draw(loadingcapt);
 				window.draw(loadingbarbg);
 				window.draw(loadingbar);
@@ -595,15 +648,12 @@ int main() {
 			loadStage = 3;
 			Stage = "Initializing source...";
 			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-			loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 1.6f, loadingbar.getSize().y));
+			loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+			loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 1.6f, loadingbar.getSize().y));
 			break;
 		case 3:
 
 			//initialize source
-
-			sw = ntohl(width);
-			sh = ntohl(height);
 
 			//get viewport info
 			HWND hwnd;
@@ -614,7 +664,7 @@ int main() {
 
 			monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
 
-			if (monitor != NULL) {   //so we dont blow up our pc by reading some null shit
+			if (monitor != NULL) {
 				moninfo.cbSize = sizeof(moninfo);
 				GetMonitorInfoA(monitor, &moninfo);
 
@@ -631,8 +681,8 @@ int main() {
 			loadStage = 4;
 			Stage = "Generating the image...";
 			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-			loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
+			loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+			loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
 			break;
 
 		case 4:
@@ -680,19 +730,21 @@ int main() {
 				if (cumter > 188) {
 					Stage = "Generating the image... " + std::to_string(x + 1) + "/" + std::to_string(maxclones);
 					loadingcapt.setString(Stage);
-					loadingcapt.setPosition(LOADING_X / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y / 2 - loadingcapt.getLocalBounds().height);
-					loadingbar.setSize(sf::Vector2f(LOADING_X * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
+					loadingcapt.setPosition(LOADING_X_PLUS / 2 - loadingcapt.getLocalBounds().width / 2, LOADING_Y_PLUS / 2 - loadingcapt.getLocalBounds().height);
+					loadingbar.setSize(sf::Vector2f(LOADING_X_PLUS * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
 
-					doBGanim();
+					float3 values = doBorder();
+
+					backS.setColor(sf::Color(values.x, values.y, values.z, 100.f));
 
 					textPulse(true);
 
 					loadingcapt.setOutlineColor(sf::Color(0, 0, 0, alphaLoad));
 
-					window.clear(sf::Color::White);
+					window.clear(sf::Color::Transparent);
+					window.draw(blurryS);
+					window.draw(backS);
 					window.draw(bganim, 4, sf::Quads);
-					window.draw(bganim2, 4, sf::Quads);
-					window.draw(bganim3, 4, sf::Quads);
 					window.draw(loadingcapt);
 					window.draw(loadingbarbg);
 					window.draw(loadingbar);
@@ -718,7 +770,7 @@ int main() {
 
 			loadingcapt.setOutlineColor(sf::Color(0, 0, 0, 255));
 
-			window.clear(sf::Color::White);
+			window.clear(sf::Color::Transparent);
 			window.draw(loadingcapt);
 			window.draw(bottomcapt);
 			window.display();
@@ -727,16 +779,18 @@ int main() {
 		}
 		if (!loaded) {
 
-			doBGanim();
+			float3 values = doBorder();
+
+			backS.setColor(sf::Color(values.x, values.y, values.z, 100.f));
 
 			textPulse(false);
 
 			loadingcapt.setOutlineColor(sf::Color(0, 0, 0, alphaLoad));
 
-			window.clear(sf::Color::White);
+			window.clear(sf::Color::Transparent);
+			window.draw(blurryS);
+			window.draw(backS);
 			window.draw(bganim, 4, sf::Quads);
-			window.draw(bganim2, 4, sf::Quads);
-			window.draw(bganim3, 4, sf::Quads);
 			window.draw(loadingcapt);
 			window.draw(loadingbarbg);
 			window.draw(loadingbar);
