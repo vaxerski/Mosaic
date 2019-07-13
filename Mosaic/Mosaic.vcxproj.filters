@@ -13,16 +13,40 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Pliki źródłowe\GUI">
+      <UniqueIdentifier>{1c16a321-b8fa-48a5-968b-d0d5edd24928}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki nagłówkowe\GUI">
+      <UniqueIdentifier>{0dc91665-0517-4e7e-a240-c945646b9bb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\App">
+      <UniqueIdentifier>{94e8a202-b1e5-426a-a3dc-c24a41b4fdaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pliki źródłowe\Generation">
+      <UniqueIdentifier>{294d34a6-c935-421e-8941-e38b379c38fa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Pliki źródłowe</Filter>
+    <ClCompile Include="render.cpp">
+      <Filter>Pliki źródłowe\GUI</Filter>
     </ClCompile>
-    <ClCompile Include="parsing.cpp">
-      <Filter>Pliki źródłowe</Filter>
+    <ClCompile Include="controls.cpp">
+      <Filter>Pliki źródłowe\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="helpers.cpp">
+      <Filter>Pliki źródłowe\App</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Pliki źródłowe\App</Filter>
     </ClCompile>
     <ClCompile Include="math.cpp">
-      <Filter>Pliki źródłowe</Filter>
+      <Filter>Pliki źródłowe\App</Filter>
+    </ClCompile>
+    <ClCompile Include="parsing.cpp">
+      <Filter>Pliki źródłowe\App</Filter>
+    </ClCompile>
+    <ClCompile Include="generate.cpp">
+      <Filter>Pliki źródłowe\Generation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -37,6 +61,18 @@
     </ClInclude>
     <ClInclude Include="math.h">
       <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="helpers.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
+    <ClInclude Include="render.h">
+      <Filter>Pliki nagłówkowe\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="controls.h">
+      <Filter>Pliki nagłówkowe\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Generate.h">
+      <Filter>Pliki źródłowe\Generation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

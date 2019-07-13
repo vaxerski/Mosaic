@@ -24,6 +24,7 @@
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>Mosaic</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -143,21 +144,29 @@
       <SupportJustMyCode>true</SupportJustMyCode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Dwmapi.lib;sfml-main.lib;sfml-graphics-s.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;freetype.lib;winmm.lib;gdi32.lib;Ws2_32.lib;User32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ole32.lib;Shell32.lib;Comdlg32.lib;Dwmapi.lib;sfml-main.lib;sfml-graphics-s.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;freetype.lib;winmm.lib;gdi32.lib;Ws2_32.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>E:\SFML64\lib</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <AdditionalOptions>/ENTRY:"mainCRTStartup" %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="controls.cpp" />
+    <ClCompile Include="generate.cpp" />
+    <ClCompile Include="helpers.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math.cpp" />
     <ClCompile Include="parsing.cpp" />
+    <ClCompile Include="render.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="controls.h" />
+    <ClInclude Include="Generate.h" />
+    <ClInclude Include="helpers.h" />
     <ClInclude Include="INIReader.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="parsing.h" />
+    <ClInclude Include="render.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

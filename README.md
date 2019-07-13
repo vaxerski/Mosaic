@@ -4,30 +4,27 @@
 [![HitCount](http://hits.dwyl.io/vaxerski/Mosaic.svg)](http://hits.dwyl.io/vaxerski/Mosaic)
 
 # Mosaic
-A handy application for making mosaic out of images<br/>
+A handy application for making mosaics out of images<br/>
 !NOTE: Mosaic starting from v1.5 is 64-bit only. You need to compile the app for 32-bit by yourself if you have a 32-bit system somehow.
 
 ## Usage
-Put any composite `.png`'s in the /images/ folder. It needs to be **directly in the same folder as the app.**<br/>
-Put one source.png in the folder **with the app**<br/>
+Precision point - the lower, the more detailed the image will be. (extremely low prec point will slow your pc down and require lots of time)
+Max clones - the maximum amount of clones to produce an image. (lower precision points require more clones, more clones = more RAM)
 
-Run the app.
+Composite images must be the same resolution PNG/JPG/JPEG's and be put in one folder.
+Source image can be PNG/JPG/JPEG.
 
-Edit the config if anything's wrong.
+!NOTE: the app may use up to 8GB of RAM while generating if dealing with low precision points on big images, e.g. 4K.
 
-Press `F11` to make an image of the mosaic and save it to /screenshots/. Don't worry, even if the viewport is bigger than your screen, F11 **WILL** work.<br/>
-Press `ESC` to close the app when finished.
+## Suggestions and Bugs
 
-## Config
-`max_clones` - Sets max amount of composites on image.<br/>
-`precision_point` - Sets amount of precision, here the size of one image. Smaller = more precise.<br/>
-`debug_info` - debug info stats
+If you find any bugs, or have suggestions, feel free to open an "issue" in the issues tab. Thank you! :)
 
 ## Future Plans
-- [ ] Make a UI
+- [x] Make a UI
 - [x] Support for JPEG and different resolutions
-- [ ] Easier navigation and usage
-- [ ] Do something to the renderer to stop rendering more frames than it has to
+- [x] Easier navigation and usage
+- [x] Do something to the renderer to stop rendering more frames than it has to
 - [ ] Make the code less spaghetti
 - [ ] *sigh* optimization
 
@@ -40,7 +37,7 @@ No, it's literally open source. Go check it yourself.<br/><br/>
 
 **Will this slow my computer down?**
 
-Yes, it's doing some quik mafs. After you exit it won't anymore, I guess.<br/><br/>
+Yes, it's doing some quik mafs. But only when it's generating, i guess.<br/><br/>
 
 
 **Can i use it for my own?**
