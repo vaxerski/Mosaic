@@ -55,6 +55,7 @@ int lmx, lmy;
 bool dragging = false;
 int what = errortype;
 int whatid = -1;
+BOOL shader = false;
 
 sf::RenderWindow* pWind = &window;
 sf::Font* pFont = &font;
@@ -81,6 +82,10 @@ int main(int argc, char* argv[]) {
 		return ERROR;
 	}
 
+	if (sf::Shader::isAvailable()) {
+		shader = true;
+	}
+
 	pWind->create(sf::VideoMode(WINDX, WINDY), "Mosaic 2", sf::Style::None);
 	pWind->setFramerateLimit(240);
 
@@ -104,6 +109,7 @@ int main(int argc, char* argv[]) {
 	//setup all
 	Render::SetParams(pFont);
 	Render::InitUI(pFont);
+	if (shader) Render::InitShader();
 	
 	while (pWind->isOpen()) {   //main window loop
 

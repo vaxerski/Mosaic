@@ -68,6 +68,7 @@ int viewportX;
 int viewportY;
 std::string Stage = "";
 bool abortE;
+float noise = 0.f;
 
 int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* imag) {
 	generating = true;
@@ -322,8 +323,13 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 				measure = source.getPixel((int)(boxX + 0.5 * scale * lw), (int)(boxY + 0.5 * scale * lh));
 			}
 
+			if (noise > 0) {
+				clones[counter] = sprites[Helpers::getNearest3D(sf::Color(measure.r + rand() % (int)noise - noise / 2, measure.g + rand() % (int)noise - noise / 2, measure.b + rand() % (int)noise - noise / 2), i)];
+			}
+			else {
+				clones[counter] = sprites[Helpers::getNearest3D(measure, i)];
+			}
 
-			clones[counter] = sprites[Helpers::getNearest3D(measure, i)];
 			clones[counter].setPosition(rowX* scale* lw, rowY* scale* lh);
 
 			rowX++;
@@ -398,6 +404,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	generated = true;
 	generating = false;
+
 }
 
 void setupSave(sf::Font* font) {

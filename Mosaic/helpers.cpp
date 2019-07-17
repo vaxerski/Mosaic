@@ -95,35 +95,25 @@ void Helpers::GetCursorToWindow(int* x, int* y, sf::RenderWindow* pwnd) {
 
 LPWSTR g_path = NULL;
 
-#define CONTROL_GROUP           2000
-#define CONTROL_RADIOBUTTONLIST 2
-#define CONTROL_RADIOBUTTON1    1
-#define CONTROL_RADIOBUTTON2    2   
-
 
 void PickContainer()
 {
-	IFileDialog* pfd;
-	if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pfd))))
-	{
+	IFileDialog* filedial;
+	if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&filedial)))) {
 		DWORD dwOptions;
-		if (SUCCEEDED(pfd->GetOptions(&dwOptions)))
-		{
-			pfd->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST);
+		if (SUCCEEDED(filedial->GetOptions(&dwOptions))) {
+			filedial->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST);
 		}
-		if (SUCCEEDED(pfd->Show(NULL)))
-		{
-			IShellItem* psi;
-			if (SUCCEEDED(pfd->GetResult(&psi)))
-			{
-				if (!SUCCEEDED(psi->GetDisplayName(SIGDN_FILESYSPATH, &g_path)))
-				{
-					MessageBox(NULL, "GetIDListName() failed", NULL, NULL);
+		if (SUCCEEDED(filedial->Show(NULL))) {
+			IShellItem* pshellitem;
+			if (SUCCEEDED(filedial->GetResult(&pshellitem))) {
+				if (!SUCCEEDED(pshellitem->GetDisplayName(SIGDN_FILESYSPATH, &g_path))) {
+					MessageBox(NULL, "GetIdListName() failed", NULL, NULL);
 				}
-				psi->Release();
+				pshellitem->Release();
 			}
 		}
-		pfd->Release();
+		filedial->Release();
 	}
 }
 
@@ -261,6 +251,7 @@ bool Helpers::forceRender(sf::RenderWindow* pWind){
 
 
 	pWind->clear(sf::Color::Transparent);
+
 	Render::GUI(pWind);
 
 	frame = high_resolution_clock::now();
@@ -268,11 +259,10 @@ bool Helpers::forceRender(sf::RenderWindow* pWind){
 
 	Render::DebugInfo(pWind, (double)((double)delta.count() / (double)1000000000));
 
-
-
 	pWind->display();
 
 	generated = false;
 
 	return true;
 }
+

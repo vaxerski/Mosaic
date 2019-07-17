@@ -25,6 +25,7 @@ extern int viewportX, viewportY;
 extern CButtonDrawable saveButD;
 extern bool generated;
 extern sf::Text notenough;
+extern BOOL shader;
 
 sf::Sprite prevS;
 sf::Texture prevT;
@@ -47,6 +48,8 @@ sf::Sprite blur;
 sf::Image blurI;
 
 sf::Text prevWarn;
+
+sf::Shader S_gaussian;
 
 Color c = { 255,0,0 };
 
@@ -125,7 +128,7 @@ void Render::SetParams(sf::Font* font) {
 	
 	loadingcapt.setFont(*font);
 	loadingcapt.setCharacterSize(24);
-	loadingcapt.setColor(sf::Color(255, 204, 0, 255));
+	loadingcapt.setFillColor(sf::Color(255, 204, 0, 255));
 	loadingcapt.setOutlineThickness(0.3f);
 	loadingcapt.setOutlineColor(sf::Color(0, 0, 0, 249));
 	
@@ -222,7 +225,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic alpha | v2.0a6");
+	watermark.setString("Mosaic 2.0 beta. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -235,7 +238,17 @@ void Render::InitUI(sf::Font* font) {
 	creating::CreateButton(400, 295, 200, 50, "Click here to view...", font, CallViewRender, false);
 	creating::CreateSlider(1010, 230, 240, "Precision point", font, false, 0.01f, 0.0001f, 0.02f);
 	creating::CreateSlider(1010, 280, 240, "Max clones", font, false, 5000000, 10000, 50000000);
+	creating::CreateSlider(1010, 330, 240, "Noise amount", font, false, 0.f, 0.f, 15.f);
 	creating::CreateExit(font);
+}
+
+void Render::InitShader() {
+	S_gaussian.setUniform("texture", prevT);
+	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.001f, 0));
+	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.001f));
+	if (!S_gaussian.loadFromFile("resource/gaussianBlur.hlsl", sf::Shader::Fragment)) {
+		MessageBox(NULL, TEXT("shader failed."), TEXT("Fatal error."), NULL);
+	}
 }
 
 float scael = 1;
@@ -245,6 +258,7 @@ void Render::SetPrev() {
 	prevS.setColor(sf::Color(255, 255, 255, 200));
 	prevS.setTexture(prevT);
 	prevS.setTextureRect(sf::IntRect(0, 0, sw, sh));
+
 
 	float t1, t2;
 	t1 = (float)((float)900 / (float)sw);
@@ -282,7 +296,11 @@ void Render::RenderPrev(sf::RenderWindow* pwind) {
 
 	if (sw == 0 || sh == 0 || !generated) return;
 
-	pwind->draw(prevS);
+	S_gaussian.setUniform("texture", prevT);
+	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.003f, 0));
+	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.003f));
+
+	
 
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwind);
@@ -294,9 +312,11 @@ void Render::RenderPrev(sf::RenderWindow* pwind) {
 	h = 500;
 
 	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+		pwind->draw(prevS, &S_gaussian);
 		Render::PrevClick(pwind);
 	}
 	else {
+		pwind->draw(prevS);
 		setrenderable(3, false);
 	}
 }

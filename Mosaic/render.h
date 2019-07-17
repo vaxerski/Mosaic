@@ -11,6 +11,7 @@ namespace Render {
 	void GUI(sf::RenderWindow* pwind);
 	void DebugInfo(sf::RenderWindow* pwind, double frametime);
 	void InitUI(sf::Font*);
+	void InitShader();
 	void SetPrev();
 	void RenderPrev(sf::RenderWindow* pwind);
 	void PrevClick(sf::RenderWindow* pwind);

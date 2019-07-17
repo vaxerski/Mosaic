@@ -25,6 +25,7 @@ extern long long maxclones;
 extern bool generated;
 extern bool generating;
 extern int sw, sh;
+extern float noise;
 
 //creating
 
@@ -167,7 +168,10 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 
 	if (id >= slids)
 		return -1;
-//	if (Sliders[id].render == false) return 1;
+
+	std::string temp = std::to_string(Sliders[id].val);
+
+	char dot = (char)".";
 
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwind);
@@ -182,12 +186,13 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 		pwind->draw(SlidersD[id].bar);
 		SlidersD[id].zip.setFillColor(sf::Color(180, 180, 180));
 		SlidersD[id].zip.setPosition(sf::Vector2f(Sliders[id].val / Sliders[id].max * w + x, y - 2));
-		std::string temp = std::to_string(Sliders[id].val);
+		
 		if (id == 1) {
 			temp.erase(temp.find_last_of('.'), std::string::npos);
 		}
 		else {
 			temp.erase(temp.find_last_not_of('0') + 1, std::string::npos);
+			if (temp.back() == (char)0x2E) temp.erase(temp.find_last_of("."));  //0x2E is a dot. 
 		}
 		SlidersD[id].text2.setString(temp);
 		SlidersD[id].text2.setPosition(sf::Vector2f(w / 2 - SlidersD[id].text2.getLocalBounds().width / 2 + x, 5 / 2 - SlidersD[id].text2.getLocalBounds().height / 2 + y + 8));
@@ -199,12 +204,13 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 		pwind->draw(SlidersD[id].bar);
 		SlidersD[id].zip.setFillColor(sf::Color(150, 150, 150, 150));
 		SlidersD[id].zip.setPosition(sf::Vector2f(Sliders[id].val / Sliders[id].max * w + x, y - 2));
-		std::string temp = std::to_string(Sliders[id].val);
+		
 		if (id == 1) {
 			temp.erase(temp.find_last_of('.'), std::string::npos);
 		}
 		else {
 			temp.erase(temp.find_last_not_of('0') + 1, std::string::npos);
+			if (temp.back() == (char)0x2E) temp.erase(temp.find_last_of("."));  //0x2E is a dot. 
 		}
 		SlidersD[id].text2.setString(temp);
 		SlidersD[id].text2.setPosition(sf::Vector2f(w / 2 - SlidersD[id].text2.getLocalBounds().width / 2 + x, 5 / 2 - SlidersD[id].text2.getLocalBounds().height / 2 + y + 8));
@@ -416,5 +422,9 @@ void setSliderVal(int id, float val) {
 	else if (id == 1) {
 		maxclones = (long long)val;
 		Sliders[id].val = (long long)val;
+	}
+	else if (id == 2) {
+		noise = val;
+		Sliders[id].val = val;
 	}
 }
