@@ -214,8 +214,13 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		break;
 	}
 
+	bool isDif = false;
+
+	for (int g = 0; g < MAX_INPUT; g++)
+	{ if (lastfiles[g] != files[g]) isDif = true; }
+
 	if (!firststt) {
-		if (aspectr != lastas || files != lastfiles) {
+		if (isDif) {
 			for (j; j < i; j++) {
 				if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
 					std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
@@ -293,6 +298,8 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 					return ERROR_SUCCESS;
 				}
 			}
+			for (int g = 0; g < MAX_INPUT; g++)
+				lastfiles[g] = files[g];
 		}
 	}
 	else {
