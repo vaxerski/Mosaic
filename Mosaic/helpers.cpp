@@ -16,6 +16,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <strsafe.h>
+#include "Generate.h"
 
 
 
@@ -25,6 +26,7 @@ using namespace std::chrono;
 
 extern sf::Color avg[MAX_INPUT];
 extern float distances[MAX_INPUT];
+extern preciseMeasure precMes[MAX_INPUT];
 extern high_resolution_clock::time_point timeorigin;
 extern high_resolution_clock::time_point frame;
 extern bool generated;
@@ -56,6 +58,62 @@ int Helpers::getNearest3D(sf::Color source, int scanRange) {
 
 	return leader;
 
+}
+
+int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
+	int leader;
+	float distance = 3337;
+	float dis1, dis2, dis3, dis4;
+
+	for (int x = 3; x < scanRange; x++) {
+		int r1 = in.c1.r;
+		int g1 = in.c1.g;
+		int b1 = in.c1.b;
+
+		int r1a = precMes[x].c1.r;
+		int g1a = precMes[x].c1.g;
+		int b1a = precMes[x].c1.b;
+
+		dis1 = sqrt(pow((r1 - r1a), 2) + pow((g1 - g1a), 2) + pow((b1 - b1a), 2));
+
+		int r2 = in.c2.r;
+		int g2 = in.c2.g;
+		int b2 = in.c2.b;
+
+		int r2a = precMes[x].c2.r;
+		int g2a = precMes[x].c2.g;
+		int b2a = precMes[x].c2.b;
+
+		dis2 = sqrt(pow((r2 - r2a), 2) + pow((g2 - g2a), 2) + pow((b2 - b2a), 2));
+
+		int r3 = in.c3.r;
+		int g3 = in.c3.g;
+		int b3 = in.c3.b;
+
+		int r3a = precMes[x].c3.r;
+		int g3a = precMes[x].c3.g;
+		int b3a = precMes[x].c3.b;
+
+		dis3 = sqrt(pow((r3 - r3a), 2) + pow((g3 - g3a), 2) + pow((b3 - b3a), 2));
+
+		int r4 = in.c4.r;
+		int g4 = in.c4.g;
+		int b4 = in.c4.b;
+
+		int r4a = precMes[x].c4.r;
+		int g4a = precMes[x].c4.g;
+		int b4a = precMes[x].c4.b;
+
+		dis4 = sqrt(pow((r4 - r4a), 2) + pow((g4 - g4a), 2) + pow((b4 - b4a), 2));
+
+		float avgdis = (dis1 + dis2 + dis3 + dis4) / 4;
+
+		if (avgdis < distance) {
+			leader = x;
+			distance = avgdis;
+		}
+	}
+	return leader;
 }
 
 std::wstring Helpers::s2ws(const std::string& s)
@@ -225,19 +283,19 @@ bool Helpers::forceRender(sf::RenderWindow* pWind){
 			pWind->close();
 		if (event.type == sf::Event::MouseButtonPressed) {
 			if (event.mouseButton.button == sf::Mouse::Left) {
-				int id, type;
-				type = Helpers::GetClickedTarget(&id, pWind);
+				int id, type, groupo;
+				type = Helpers::GetClickedTarget(&id, pWind, &groupo);
 				int mx, my;
 				Helpers::GetCursorToWindow(&mx, &my, pWind);
 
 				switch (type) {
 				case button:
 					//buttonclick
-					butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, nullptr, pWind, nullptr);
+					butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, nullptr, pWind, nullptr, nullptr);
 					break;
 				case exitbutton:
 					//exit button
-					butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, nullptr, pWind, nullptr);
+					butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, nullptr, pWind, nullptr, nullptr);
 					break;
 				}
 			}

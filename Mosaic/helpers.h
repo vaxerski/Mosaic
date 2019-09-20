@@ -4,6 +4,7 @@
 #define DEFINES 
 
 #define MAX_INPUT        512
+#define MAX_SAMPLES      2000000
 #define MAX_CLONES       5000000
 #define SCALE            0.01
 #define BRUTYAS_COUNTRY_OF_ORIGIN Amurica
@@ -44,6 +45,7 @@
 #include <gdiplus.h>
 #pragma comment( lib, "gdiplus" )
 #include "render.h"
+#include "Generate.h"
 
 using namespace std::experimental::filesystem::v1;
 using namespace std::chrono;
@@ -57,10 +59,11 @@ Color TransformH(const Color& in, float H);
 
 namespace Helpers {
 	int getNearest3D(sf::Color source, int scanRange);
+	int GetPreciseNearest3D(preciseMeasure in, int scanRange);
 	std::wstring s2ws(const std::string& s);
 	int calculateScreenshot();
 	void GetCursorToWindow(int* x, int* y, sf::RenderWindow* pwnd);
-	int GetClickedTarget(int* id, sf::RenderWindow* pwnd);
+	int GetClickedTarget(int* id, sf::RenderWindow* pwnd, int*);
 	std::string openfilename(int id);
 	void Terminate();
 	bool forceRender(sf::RenderWindow* pwnd);

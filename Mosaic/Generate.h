@@ -10,3 +10,6 @@ namespace Generate {
 	void abort();
 }
 
+struct preciseMeasure {
+	sf::Color c1, c2, c3, c4; //maybe in a future update do multipoint? hmm
+};

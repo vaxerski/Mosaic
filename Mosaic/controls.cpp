@@ -26,6 +26,9 @@ extern bool generated;
 extern bool generating;
 extern int sw, sh;
 extern float noise;
+extern bool dScan;
+
+int aspectr = 0;
 
 //creating
 
@@ -57,6 +60,32 @@ void creating::CreateButton(int x, int y, int w, int h, std::string caption, sf:
 
 	buts++;
 	
+}
+
+void creating::CreateCheckbox(int x, int y, int w, std::string text, sf::Font* font, void* callback, bool enabled) {
+	CheckBoxes[checks].x = x;
+	CheckBoxes[checks].y = y;
+	CheckBoxes[checks].w = w;
+	CheckBoxes[checks].caption = text;
+	CheckBoxes[checks].callback = callback;
+	CheckBoxes[checks].enabled = enabled;
+
+	CheckBoxesD[checks].box.setSize(sf::Vector2f(10, 10)); //default 13 w+h fox box, 3 for outline
+	CheckBoxesD[checks].box.setPosition(sf::Vector2f(x, y));
+	CheckBoxesD[checks].box.setFillColor(sf::Color(50,50,50)); //grey for off, no hover
+	CheckBoxesD[checks].box.setOutlineThickness(3); //5px
+	CheckBoxesD[checks].box.setOutlineColor(sf::Color::Black);
+	CheckBoxesD[checks].text.setString(text);
+	CheckBoxesD[checks].text.setFont(*font);
+	CheckBoxesD[checks].text.setCharacterSize(13);
+	CheckBoxesD[checks].text.setPosition(sf::Vector2f(x + 15, y - 2));
+	CheckBoxesD[checks].text.setFillColor(sf::Color::White);
+
+	CheckBoxes[checks].drawable = &CheckBoxesD[checks];
+
+	if(checks == 0) dScan = false;
+
+	checks++;
 }
 
 void creating::CreateExit(sf::Font* font) {
@@ -109,7 +138,107 @@ void creating::CreateSlider(int x, int y, int w, std::string caption, sf::Font* 
 	slids++;
 
 }
+
+void creating::CreateDropbox(int x, int y, int items, sf::Font* font, std::string itemst[MAX_ITEMS], int selected, std::string capt) {
+
+	//w = 240
+	//h = 30
+
+	Dropboxes[dropbs].x = x;
+	Dropboxes[dropbs].y = y;
+	Dropboxes[dropbs].selected = selected;
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		Dropboxes[dropbs].items[i] = itemst[i];
+	}
+	Dropboxes[dropbs].itemsN = items;
+	
+	DropboxesD[dropbs].activetext.setFont(*font);
+	DropboxesD[dropbs].activetext.setCharacterSize(15);
+	DropboxesD[dropbs].activetext.setString(itemst[selected]);
+	DropboxesD[dropbs].activetext.setPosition(sf::Vector2f(x + 10, y + 15 - DropboxesD[dropbs].activetext.getLocalBounds().height / 2));
+	DropboxesD[dropbs].activetext.setFillColor(sf::Color::White);
+
+	DropboxesD[dropbs].capt.setFont(*font);
+	DropboxesD[dropbs].capt.setCharacterSize(12);
+	DropboxesD[dropbs].capt.setString(capt);
+	DropboxesD[dropbs].capt.setPosition(sf::Vector2f(x + 120 - DropboxesD[dropbs].capt.getLocalBounds().width/2, y - 8));
+	DropboxesD[dropbs].capt.setFillColor(sf::Color::White);
+
+	DropboxesD[dropbs].box.setPosition(sf::Vector2f(x, y));
+	DropboxesD[dropbs].box.setFillColor(sf::Color(20, 20, 20));
+	DropboxesD[dropbs].box.setSize(sf::Vector2f(240, 30));
+	DropboxesD[dropbs].box.setOutlineThickness(1);
+	DropboxesD[dropbs].box.setOutlineColor(sf::Color::Black);
+
+	DropboxesD[dropbs].showSel.setPosition(sf::Vector2f(x, y));
+	DropboxesD[dropbs].showSel.setFillColor(sf::Color(50, 50, 50));
+	DropboxesD[dropbs].showSel.setSize(sf::Vector2f(240, 30));
+
+	DropboxesD[dropbs].openBox.setPosition(x, y + 30); //30 for active
+	DropboxesD[dropbs].openBox.setFillColor(sf::Color(20, 20, 20));
+	DropboxesD[dropbs].openBox.setSize(sf::Vector2f(240, 30 * items));
+	
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		DropboxesD[dropbs].itemsT[i].setFont(*font);
+		DropboxesD[dropbs].itemsT[i].setCharacterSize(15);
+		DropboxesD[dropbs].itemsT[i].setString(itemst[i]);
+		DropboxesD[dropbs].itemsT[i].setPosition(sf::Vector2f(x + 10, y + 15 - DropboxesD[dropbs].itemsT[i].getLocalBounds().height / 2 + 30 + i * 30));
+		if (i + 1 > items) {
+			DropboxesD[dropbs].itemsT[i].setFillColor(sf::Color::Transparent);
+		}
+		else {
+			DropboxesD[dropbs].itemsT[i].setFillColor(sf::Color::White);
+		}
+	}
+
+	Dropboxes[dropbs].drawable = &DropboxesD[dropbs];
+
+	dropbs++;
+}
+
 //drawing
+
+int drawing::drawComboBox(sf::RenderWindow* pwind, int id) {
+	if (id >= dropbs)
+		return -1;
+
+	int mx, my;
+	Helpers::GetCursorToWindow(&mx, &my, pwind);
+
+	int x, y, w, h;
+	x = Dropboxes[id].x;
+	y = Dropboxes[id].y;
+	w = 240;
+	h = 30;
+
+	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+		DropboxesD[id].box.setFillColor(sf::Color(50, 50, 50));
+	}
+	else {
+		DropboxesD[id].box.setFillColor(sf::Color(20, 20, 20));
+	}
+
+	DropboxesD[id].activetext.setString(Dropboxes[id].items[Dropboxes[id].selected]);
+
+	pwind->draw(DropboxesD[id].box);
+	pwind->draw(DropboxesD[id].activetext);
+	pwind->draw(DropboxesD[id].capt);
+	if (Dropboxes[id].open) {
+		pwind->draw(DropboxesD[id].openBox);
+		for (int j = 0; j < Dropboxes[id].itemsN; j++) {
+			h = 30;
+			y = Dropboxes[id].y + 30 + 30 * j;
+			if (x < mx && mx < x + w && y < my && my < y + h) { //yeees
+				DropboxesD[id].showSel.setPosition(sf::Vector2f(x, y));
+				pwind->draw(DropboxesD[id].showSel);
+			}
+		}
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			pwind->draw(DropboxesD[id].itemsT[i]);
+		}
+	}
+	return 1;
+}
 
 int drawing::drawButton(sf::RenderWindow* pwind, int id) {
 
@@ -162,6 +291,50 @@ int drawing::drawButton(sf::RenderWindow* pwind, int id) {
 
 
 	return 1;
+}
+
+int drawing::drawCheckbox(sf::RenderWindow* pwind, int id) {
+	if (id >= checks)
+		return -1;
+
+	int mx, my;
+	Helpers::GetCursorToWindow(&mx, &my, pwind);
+
+	int x, y, w, h;
+	x = CheckBoxes[id].x;
+	y = CheckBoxes[id].y;
+	w = 15;
+	h = 15;
+
+	CheckBoxesD[0].text.setString("Advanced Scan (slow!)");
+	CheckBoxes[0].enabled = dScan;
+
+	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+		if (CheckBoxes[id].enabled) {
+			CheckBoxesD[id].box.setFillColor(sf::Color(255, 202, 105));
+		}
+		else {
+			if (noise > 0 && id == 0) { //inc 0 check with noise
+				CheckBoxesD[id].text.setString("Incompatible with noise!");
+			}
+			else {
+				CheckBoxesD[id].box.setFillColor(sf::Color(153, 128, 83));
+			}
+		}
+	}
+	else {
+		if (CheckBoxes[id].enabled) {
+			CheckBoxesD[id].box.setFillColor(sf::Color(255, 166, 0));
+		}
+		else {
+			CheckBoxesD[id].box.setFillColor(sf::Color(50, 50, 50));
+		}
+	}
+
+	if (id != 0) {
+		pwind->draw(CheckBoxesD[id].box);
+		pwind->draw(CheckBoxesD[id].text);  //not ready yet i guess
+	}
 }
 
 int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
@@ -248,10 +421,48 @@ int drawing::drawExit(sf::RenderWindow* pwind) {
 	return 1;
 }
 
-int Helpers::GetClickedTarget(int* id, sf::RenderWindow* pwnd) {
+int Helpers::GetClickedTarget(int* id, sf::RenderWindow* pwnd, int* groupid) {
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwnd);
 	int x, y, w, h;
+
+	//comboboxes
+	for (int i = 0; i < DROPBOXES; i++) {
+
+		x = Dropboxes[i].x;
+		y = Dropboxes[i].y;
+		w = 240;
+		if (Dropboxes[i].open)
+			h = 30 + Dropboxes[i].itemsN * 30;
+		else
+			h = 30;
+
+
+		if (x < mx && mx < x + w && y < my && my < y + h) {  //on it
+
+			if (Dropboxes[i].open) {
+				for (int j = 0; j < Dropboxes[i].itemsN; j++) {
+					h = 30;
+					y = Dropboxes[i].y + 30 + 30 * j;
+					if (x < mx && mx < x + w && y < my && my < y + h) { //yeees
+						*id = i;
+						*groupid = j;
+						return dropbox;
+					}
+				}
+				*id = i;
+				*groupid = -1;
+				return dropbox;
+			}
+			else {
+				*id = i;
+				*groupid = -1;
+				return dropbox;
+			}
+		}
+	}
+
+
 	//buttons
 	for (int i = 0; i < BUTTONS; i++) {
 		
@@ -293,7 +504,7 @@ int Helpers::GetClickedTarget(int* id, sf::RenderWindow* pwnd) {
 
 	//sliders
 	for (int j = 0; j < SLIDERS; j++) {
-		
+
 
 		int x, y, w, h;
 		x = Sliders[j].x;
@@ -304,6 +515,21 @@ int Helpers::GetClickedTarget(int* id, sf::RenderWindow* pwnd) {
 		if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
 			*id = j;
 			return slider;
+		}
+	}
+
+	for (int j = 0; j < CHECKBOXES; j++) {
+
+
+		int x, y, w, h;
+		x = CheckBoxes[j].x;
+		y = CheckBoxes[j].y;
+		w = 15; //only the box, not text
+		h = 15;
+
+		if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+			*id = j;
+			return checkbox;
 		}
 	}
 
@@ -320,6 +546,9 @@ void* getPointerA(int type, int id) {
 		break;
 	case slider:
 		return &Sliders[id];
+		break;
+	case checkbox:
+		return &CheckBoxes[id];
 		break;
 	}
 }
@@ -356,7 +585,7 @@ void dispatchPath(std::string path, int id) {
 
 sf::Text texto;
 
-void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3) {
+void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3, void* arg4) {
 	std::string path;
 	switch (id) {
 	case NONE:
@@ -385,6 +614,25 @@ void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3) 
 	case OpenFileDialogC:
 		path = Helpers::openfilename(2);
 		dispatchPath(path, OpenFileDialogC);
+		break;
+	case CHECKBOXCALLBACK:
+		if (dScan) dScan = false;
+		else dScan = true;
+		break;
+	case DropBoxCallBack:
+		int ide = *reinterpret_cast<int*>(arg4);
+
+		if (*reinterpret_cast<int*>(arg3) == -1) {
+			if (Dropboxes[ide].open)
+				Dropboxes[ide].open = false;
+			else
+				Dropboxes[ide].open = true;
+		}
+		else {
+			Dropboxes[ide].open = false;
+			Dropboxes[ide].selected = *reinterpret_cast<int*>(arg3);
+			aspectr = *reinterpret_cast<int*>(arg3);
+		}
 		break;
 	}
 }

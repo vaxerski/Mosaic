@@ -37,10 +37,32 @@
 typedef std::vector<sf::Sprite> sprite_vector;
 typedef std::vector<sf::Texture> texture_vector;
 typedef std::vector<sf::Image> image_vector;
+typedef std::vector<sf::Color> color_vec;
 
 image_vector images(MAX_INPUT);
 sprite_vector sprites(MAX_INPUT);
 texture_vector Textures(MAX_INPUT);
+color_vec dScan_cols(MAX_SAMPLES);
+int textureScales[MAX_INPUT];
+std::string files[MAX_INPUT]; //max files
+std::string lastfiles[MAX_INPUT]; //max files
+sf::Color avg[MAX_INPUT];
+float distances[MAX_INPUT];
+bool firststt = true;
+int lastas = 0;
+bool generated = false;
+bool generating = false;
+int viewportX;
+int viewportY;
+sf::Image result;
+std::string Stage = "";
+bool abortE;
+int sw, sh;
+long long maxclones = 5000000;
+sf::Text notenough;
+CExit ExitB2;
+float noise = 0.f;
+preciseMeasure precMes[MAX_INPUT];
 
 CButton saveBut;
 CButtonDrawable saveButD;
@@ -54,23 +76,15 @@ extern sf::RectangleShape loadingbarbg;
 extern sf::RectangleShape loadingbar;
 extern sf::RenderWindow* pWind;
 extern float scale;
+extern bool dScan;
+extern int aspectr;
 
-sf::Text notenough;
-bool generated = false;
-bool generating = false;
-long long maxclones = 5000000;
-sf::Color avg[MAX_INPUT];
-float distances[MAX_INPUT];
-CExit ExitB2;
-int sw, sh;
-sf::Image result;
-int viewportX;
-int viewportY;
-std::string Stage = "";
-bool abortE;
-float noise = 0.f;
+
+int j = 1;
 
 int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* imag) {
+
+
 	generating = true;
 	try {
 		sprite_vector clones(maxclones);
@@ -84,15 +98,13 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	sprite_vector clones(maxclones); //init vector for clones
 
-	std::string files[MAX_INPUT]; //max files
-
-
+	
 
 	int i = 1;
 	int lw, lh;
 	int cw, ch;
 
-	int j = 1;
+
 	int ij = 1;
 
 	sf::Color avg1, avg2;
@@ -132,10 +144,15 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	Helpers::forceRender(pWind);
 
 	for (const auto& entry : directory_iterator(comp)) { //get paths
+
+
+
 		if (i == MAX_INPUT) {
 			break;
 		}
 		else {
+
+			//we dont need lots of that anymore :crabrave:
 
 			if (lw == -1) {
 
@@ -159,16 +176,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 				parsing::GetImageSize(pth1, &cw, &ch);
 
-				if (cw == lw && ch == lh) {
-
-					files[i] = pathh1;
-				}
-				else {
-					string z = "All textures must be the same size PNG/JPEG's. Error at: " + (string)pth1;
-					LPCTSTR lp = (LPCTSTR)z.c_str();
-					MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-					return ERROR_COMPOSITE;
-				}
+				files[i] = pathh1;
 			}
 
 		}
@@ -183,59 +191,195 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		}
 	}
 
+
+
 	Stage = "Parsing textures...";
 	loadingcapt.setString(Stage);
 	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
 	Helpers::forceRender(pWind);
 
-	for (j; j < i; j++) {
-		if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
-			std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
-			LPCTSTR lp = (LPCTSTR)yeet.c_str();
-			MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-			Stage = "Error";
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-			loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-			return 0;
-		}
-		if (!images[j].loadFromFile(files[j])) {
-			std::string yeet = ("Error while creating buffer image. Error at: " + files[j] + "\nDo you have enough RAM?");
-			LPCTSTR lp = (LPCTSTR)yeet.c_str();
-			MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-			Stage = "Error";
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-			loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-			return 0;
-		}
-		sf::Color c1, c2, c3, c4;
+	switch (aspectr) {
+	case 0:
+		//16:9
+		lw = (lh * 16) / 9;
+		break;
+	case 1:
+		//4:3
+		lw = (lh * 4) / 3;
+		break;
+	case 2:
+		//1:1
+		lw = (lh * 1) / 1;
+		break;
+	}
 
-		c1 = images[j].getPixel((int)lw / 2, (int)lh / 2); //center
-		c2 = images[j].getPixel((int)lw / 2, (int)lh / 4); //top center
-		c3 = images[j].getPixel((int)lw / 4, (int)lh * 0.75); //left lower
-		c4 = images[j].getPixel((int)lw * 0.75, (int)lh * 0.75); //right lower
+	if (!firststt) {
+		if (aspectr != lastas || files != lastfiles) {
+			for (j; j < i; j++) {
+				if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
+					std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
+					LPCTSTR lp = (LPCTSTR)yeet.c_str();
+					MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
+					Stage = "Error";
+					loadingcapt.setString(Stage);
+					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+					return 0;
+				}
+				if (!images[j].loadFromFile(files[j])) {
+					std::string yeet = ("Error while creating buffer image. Error at: " + files[j] + "\nDo you have enough RAM?");
+					LPCTSTR lp = (LPCTSTR)yeet.c_str();
+					MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
+					Stage = "Error";
+					loadingcapt.setString(Stage);
+					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+					return 0;
+				}
+				sf::Color c1, c2, c3, c4;
 
-		avg1 = sf::Color((c1.r + c2.r) / 2, (c1.g + c2.g) / 2, (c1.b + c2.b) / 2);
-		avg2 = sf::Color((c3.r + c4.r) / 2, (c3.g + c4.g) / 2, (c3.b + c4.b) / 2);
+				int ix, iy;
 
-		avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
+				std::string pathh = files[j];
+				const char* pth = pathh.c_str();
 
-		Stage = "Parsing textures... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
-		loadingcapt.setString(Stage);
-		loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-		loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
-		Helpers::forceRender(pWind);
-		if (abortE) {
-			Stage = "Aborted";
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-			loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-			abortE = false;
-			return ERROR_SUCCESS;
+				parsing::GetImageSize(pth, &ix, &iy);
+
+				c1 = images[j].getPixel((int)ix / 2, (int)iy / 2); //center
+				c2 = images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
+				c3 = images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
+				c4 = images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
+
+				if (dScan) {
+					int pp;
+					double r, g, b = 0;
+					float ir, ig, ib;
+
+					for (int p = 0; p < MAX_SAMPLES; p++) {
+						if (p >= ix * iy) break;
+						dScan_cols[p] = images[j].getPixel((int)p % ix, (int)floor(p / ix));
+						r += dScan_cols[p].r;
+						g += dScan_cols[p].g;
+						b += dScan_cols[p].b;
+						pp = p;
+					}
+					ir = r / pp;
+					ig = g / pp;
+					ib = b / pp;
+
+					avg[j] = sf::Color(ir, ig, ib);
+				}
+				else {
+					avg1 = sf::Color((c1.r + c2.r) / 2, (c1.g + c2.g) / 2, (c1.b + c2.b) / 2);
+					avg2 = sf::Color((c3.r + c4.r) / 2, (c3.g + c4.g) / 2, (c3.b + c4.b) / 2);
+
+					avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
+				}
+
+
+
+				Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
+				loadingcapt.setString(Stage);
+				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
+				Helpers::forceRender(pWind);
+				if (abortE) {
+					Stage = "Aborted";
+					loadingcapt.setString(Stage);
+					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+					abortE = false;
+					return ERROR_SUCCESS;
+				}
+			}
 		}
 	}
+	else {
+		for (j; j < i; j++) {
+			if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
+				std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
+				LPCTSTR lp = (LPCTSTR)yeet.c_str();
+				MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
+				Stage = "Error";
+				loadingcapt.setString(Stage);
+				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+				return 0;
+			}
+			if (!images[j].loadFromFile(files[j])) {
+				std::string yeet = ("Error while creating buffer image. Error at: " + files[j] + "\nDo you have enough RAM?");
+				LPCTSTR lp = (LPCTSTR)yeet.c_str();
+				MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
+				Stage = "Error";
+				loadingcapt.setString(Stage);
+				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+				return 0;
+			}
+			sf::Color c1, c2, c3, c4;
+
+			int ix, iy;
+
+			std::string pathh = files[j];
+			const char* pth = pathh.c_str();
+
+			parsing::GetImageSize(pth, &ix, &iy);
+
+			c1 = images[j].getPixel((int)ix / 2, (int)iy / 2); //center
+			c2 = images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
+			c3 = images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
+			c4 = images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
+
+			if (dScan) {
+				int pp;
+				double r, g, b = 0;
+				float ir, ig, ib;
+
+				for (int p = 0; p < MAX_SAMPLES; p++) {
+					if (p >= ix * iy) break;
+					dScan_cols[p] = images[j].getPixel((int)p % ix, (int)floor(p / ix));
+					r += dScan_cols[p].r;
+					g += dScan_cols[p].g;
+					b += dScan_cols[p].b;
+					pp = p;
+				}
+				ir = r / pp;
+				ig = g / pp;
+				ib = b / pp;
+
+				avg[j] = sf::Color(ir, ig, ib);
+			}
+			else {
+				avg1 = sf::Color((c1.r + c2.r) / 2, (c1.g + c2.g) / 2, (c1.b + c2.b) / 2);
+				avg2 = sf::Color((c3.r + c4.r) / 2, (c3.g + c4.g) / 2, (c3.b + c4.b) / 2);
+
+				avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
+			}
+
+
+
+			Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
+			loadingcapt.setString(Stage);
+			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+			loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
+			Helpers::forceRender(pWind);
+			if (abortE) {
+				Stage = "Aborted";
+				loadingcapt.setString(Stage);
+				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+				abortE = false;
+				return ERROR_SUCCESS;
+			}
+		}
+		firststt = false;
+
+		for(int g = 0; g < MAX_INPUT; g++)
+			lastfiles[g] = files[g];
+	}
+
+	
 
 	for (ij; ij < i; ij++) {
 		sprites[ij].setTexture(Textures[ij]);
@@ -295,6 +439,8 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	for (int x = 0; x < maxclones; x++) {
 
+		//20.09.2019 - Jesus fucking christ thanks younger me for not hardcoding a thing in here, holy shit saved me a lot of time
+		//           - Doing clone free aspect btw
 
 		if (!fixSkip) {
 			if (rowX * scale * lw > sw) {
@@ -330,7 +476,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 				clones[counter] = sprites[Helpers::getNearest3D(measure, i)];
 			}
 
-			clones[counter].setPosition(rowX* scale* lw, rowY* scale* lh);
+			clones[counter].setPosition(rowX * scale * lw, rowY * scale * lh);
 
 			rowX++;
 			counter++;
@@ -481,7 +627,7 @@ void rendSave() {
 }
 
 void SaveAs() {
-	butoncallbacks(OpenFileDialogC, nullptr, nullptr, nullptr);
+	butoncallbacks(OpenFileDialogC, nullptr, nullptr, nullptr, nullptr);
 }
 
 sf::Sprite prevS2;

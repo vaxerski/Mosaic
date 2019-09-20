@@ -9,9 +9,13 @@ A handy application for making mosaics out of images<br/>
 
 ## Usage
 Precision point - the lower, the more detailed the image will be. (extremely low prec point will slow your pc down and require lots of time)
+
 Max clones - the maximum amount of clones to produce an image. (lower precision points require more clones, more clones = more RAM)
 
-Composite images must be the same resolution PNG/JPG/JPEG's and be put in one folder.
+Clone aspect ratio - controls the aspect ratio of individual construction blocks. (I recommend 1:1 for best results)
+
+
+Composite images must be PNG/JPG/JPEG's and be put in one folder.
 Source image can be PNG/JPG/JPEG.
 
 !NOTE: the app may use up to 8GB of RAM while generating if dealing with low precision points on big images, e.g. 4K.
@@ -22,7 +26,7 @@ If you find any bugs, or have suggestions, feel free to open an "issue" in the i
 
 ## Future Plans
 - [x] Make a UI
-- [x] Support for JPEG and different resolutions
+- [x] Support for JPEG and different resolutions - Done fully this time
 - [x] Easier navigation and usage
 - [x] Do something to the renderer to stop rendering more frames than it has to
 - [ ] Make the code less spaghetti

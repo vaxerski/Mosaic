@@ -17,6 +17,8 @@
 static int framecount = 0;
 static int lastframe = -1;
 
+bool dScan;
+
 extern std::string sourcepath;
 extern std::string compositepath;
 extern sf::Image rendered;
@@ -203,6 +205,16 @@ void Render::GUI(sf::RenderWindow* pwind) {
 		if (drawing::drawSlider(pwind, i) == -1) break;
 	}
 
+	//checkboxes
+	for (int i = 0; i < CHECKBOXES; i++) {
+		if (drawing::drawCheckbox(pwind, i) == -1) break;
+	}
+
+	//dropboxes
+	for (int i = 0; i < DROPBOXES; i++) {
+		if (drawing::drawComboBox(pwind, i) == -1) break;
+	}
+
 	//exit
 	drawing::drawExit(pwind);
 
@@ -225,7 +237,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic 2.0 beta. Report bugs/suggestions at GitHub.");
+	watermark.setString("Mosaic 2.1. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -237,8 +249,10 @@ void Render::InitUI(sf::Font* font) {
 	creating::CreateButton(1010, 700, 240, 50, "Generate!", font, CallGenerate, true);
 	creating::CreateButton(400, 295, 200, 50, "Click here to view...", font, CallViewRender, false);
 	creating::CreateSlider(1010, 230, 240, "Precision point", font, false, 0.01f, 0.0001f, 0.02f);
-	creating::CreateSlider(1010, 280, 240, "Max clones", font, false, 5000000, 10000, 50000000);
-	creating::CreateSlider(1010, 330, 240, "Noise amount", font, false, 0.f, 0.f, 15.f);
+	creating::CreateSlider(1010, 270, 240, "Max clones", font, false, 5000000, 10000, 50000000);
+	creating::CreateSlider(1010, 310, 240, "Noise amount", font, false, 0.f, 0.f, 15.f);
+	//creating::CreateCheckbox(1010, 380, 0, "Advanced Scan (slower!)", font, &dScan, true);
+	creating::CreateDropbox(1010, 350, 3, font, new std::string[MAX_ITEMS]{"16:9", "4:3", "1:1"}, 0, "Clone aspect ratio");
 	creating::CreateExit(font);
 }
 
@@ -247,7 +261,7 @@ void Render::InitShader() {
 	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.001f, 0));
 	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.001f));
 	if (!S_gaussian.loadFromFile("resource/gaussianBlur.hlsl", sf::Shader::Fragment)) {
-		MessageBox(NULL, TEXT("shader failed."), TEXT("Fatal error."), NULL);
+		MessageBox(NULL, TEXT("shader failed."), TEXT("Initializing error."), NULL);
 	}
 }
 

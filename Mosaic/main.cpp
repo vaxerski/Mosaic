@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
 				pWind->close();
 			if (event.type == sf::Event::MouseButtonPressed) {
 				if (event.mouseButton.button == sf::Mouse::Left) {
-					int id, type;
-					type = Helpers::GetClickedTarget(&id, pWind);
+					int id, type, groupid;
+					type = Helpers::GetClickedTarget(&id, pWind, &groupid);
 					int mx, my;
 					Helpers::GetCursorToWindow(&mx, &my, pWind);
 
@@ -139,17 +139,23 @@ int main(int argc, char* argv[]) {
 						break;
 					case button:
 						//buttonclick
-						butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, pFont, pWind, nullptr);
+						butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, pFont, pWind, nullptr, nullptr);
 						break;
 					case exitbutton:
 						//exit button
-						butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, pFont, pWind, nullptr);
+						butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, pFont, pWind, nullptr, nullptr);
 						break;
 					case slider:
 						//slider
 						dragging = true;
 						what = slider;
 						whatid = id;
+						break;
+					case checkbox:
+						butoncallbacks(CHECKBOXCALLBACK, nullptr, nullptr, reinterpret_cast<CCheckbox*>(getPointerA(checkbox, id))->callback, nullptr);
+						break;
+					case dropbox:
+						butoncallbacks(DropBoxCallBack, nullptr, nullptr, &groupid, &id);
 						break;
 					}
 				}
