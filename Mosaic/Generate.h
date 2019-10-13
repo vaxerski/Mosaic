@@ -28,5 +28,6 @@ enum requests {
 	generate_image = 1,
 	show_window,
 	abort_render,
+	exit_thread,
 };
 

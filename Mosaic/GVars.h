@@ -41,4 +41,5 @@ public:
 	sf::Text loadingcapt;
 	sf::Text bottomcapt;
 	sf::Texture prevT;
+	float laspectr;
 };

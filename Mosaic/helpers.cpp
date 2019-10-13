@@ -305,6 +305,7 @@ bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
 	if (monitor != NULL) {
 		SetForegroundWindow(isLaunched);
 		mu.unlock();
+		Generate::makeRequest(exit_thread);
 		return ERROR;
 	}
 
@@ -325,6 +326,7 @@ bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
 	if (!pFont->loadFromFile("resource/font.ttf")) {
 		MessageBox(nullptr, "Couldn't load font", TEXT("Fatal Error"), MB_OK);
 		mu.unlock();
+		Generate::makeRequest(exit_thread);
 		return ERROR;
 	}
 
@@ -342,6 +344,7 @@ bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
 	//start rendering
 	while (0x14) {
 		if (terminateB) {
+			Generate::makeRequest(exit_thread);
 			return ERROR_SUCCESS;
 			//end program
 		}
@@ -438,6 +441,7 @@ bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
 		Render::DebugInfo(pWind, (double)((double)delta.count() / (double)1000000000));
 		pWind->display();
 	}
+	Generate::makeRequest(exit_thread);
 	return true;
 }
 

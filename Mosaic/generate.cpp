@@ -188,10 +188,10 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	bool isDif = false;
 
 	for (int g = 0; g < MAX_INPUT; g++)
-	{ if (G->lastfiles[g] != G->files[g]) isDif = true; }
+	{ if (G->lastfiles[g] != G->files[g]) isDif = true; break; }
 
 	if (!G->firststt) {
-		if (isDif) {
+		if (isDif || G->laspectr != aspectr) {
 			for (j; j < i; j++) {
 				
 				if (!G->Textures[j].loadFromFile(G->files[j], sf::IntRect(0, 0, lw, lh))) {
@@ -269,6 +269,8 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 			}
 			for (int g = 0; g < MAX_INPUT; g++)
 				G->lastfiles[g] = G->files[g];
+
+			G->laspectr = aspectr;
 		}
 	}
 	else {
@@ -346,6 +348,8 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 		for(int g = 0; g < MAX_INPUT; g++)
 			G->lastfiles[g] = G->files[g];
+
+		G->laspectr = aspectr;
 	}
 
 	
@@ -680,6 +684,9 @@ void Generate::Thread(sf::Font* pfont) {
 		case abort_render:
 			Generate::abort();
 			G->request = empty;
+			break;
+		case exit_thread:
+			return;
 			break;
 		default:
 			G->request = empty;
