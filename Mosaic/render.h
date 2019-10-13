@@ -25,3 +25,4 @@ static sf::Text watermark;
 struct Color {
 	float r, g, b;
 };
+

@@ -11,8 +11,11 @@
 #include "render.h"
 #include "helpers.h"
 #include "parsing.h"
+#include <future>
+#include "GVars.h"
 
-
+extern std::unique_ptr<GVars> G;
+extern std::mutex mu;
 
 static int framecount = 0;
 static int lastframe = -1;
@@ -22,21 +25,16 @@ bool dScan;
 extern std::string sourcepath;
 extern std::string compositepath;
 extern sf::Image rendered;
-extern int sw, sh;
-extern int viewportX, viewportY;
 extern CButtonDrawable saveButD;
-extern bool generated;
-extern sf::Text notenough;
 extern BOOL shader;
 
 sf::Sprite prevS;
-sf::Texture prevT;
+
+bool tt = false;
 
 sf::RectangleShape bgrend;
 sf::RectangleShape bgrend2;
 
-sf::Text loadingcapt;
-sf::Text bottomcapt;
 sf::RectangleShape loadingbarbg(sf::Vector2f(900, 40));
 sf::RectangleShape loadingbar(sf::Vector2f(900, 40));
 
@@ -45,7 +43,6 @@ sf::RectangleShape divider;
 
 sf::Text sourceinfo;
 
-sf::Texture t;
 sf::Sprite blur;
 sf::Image blurI;
 
@@ -53,10 +50,12 @@ sf::Text prevWarn;
 
 sf::Shader S_gaussian;
 
+
+
 Color c = { 255,0,0 };
 
 float R = 0;      
-float G = 0;     
+float Gc = 0;     
 float B = 255;    
 float curCol = 0; 
 float speed = 0.1f;  
@@ -74,32 +73,33 @@ Color getCur(){
 		}
 	}
 	else if (curCol == 1) {
-		if (G < 255) {
-			G = G + speed;
+		if (Gc < 255) {
+			Gc = Gc + speed;
 			R = R - speed;
 		}
 		else {
 			curCol = 2;
-			G = 255;
+			Gc = 255;
 			R = 0;
 		}
 	}
 	else {
 		if (B < 255) {
 			B = B + speed;
-			G = G - speed;
+			Gc = Gc - speed;
 		}
 		else {
 			curCol = 0;
 			B = 255;
-			G = 0;
+			Gc = 0;
 		}
 	}
-	Color ret = { R, G, B };
+	Color ret = { R, Gc, B };
 	return ret;
 }
 
 void Render::SetParams(sf::Font* font) {
+	
 	backgroundShape.setSize(sf::Vector2f(WINDX - 40, WINDY - 40));
 	backgroundShape.setPosition(20, 20);
 	backgroundShape.setFillColor(sf::Color(17, 17, 17));
@@ -118,21 +118,21 @@ void Render::SetParams(sf::Font* font) {
 	bgrend2.setFillColor(sf::Color(180, 180, 180, 50));
 	bgrend2.setSize(sf::Vector2f(900, 500));
 	blur.setPosition(sf::Vector2f(0, 0));
-	if (!t.loadFromFile("resource/blur.png")) {
+	if (!G->t.loadFromFile("resource/blur.png")) {
 		blur.setPosition(100000, 100000);
 	}
 	if (!blurI.loadFromFile("resource/blur.png")) {
 		blur.setPosition(100000, 100000);
 	}
-	blur.setTexture(t);
+	blur.setTexture(G->t);
 	blur.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(1320, 840)));
 	prevWarn.setFont(*font);
 	
-	loadingcapt.setFont(*font);
-	loadingcapt.setCharacterSize(24);
-	loadingcapt.setFillColor(sf::Color(255, 204, 0, 255));
-	loadingcapt.setOutlineThickness(0.3f);
-	loadingcapt.setOutlineColor(sf::Color(0, 0, 0, 249));
+	G->loadingcapt.setFont(*font);
+	G->loadingcapt.setCharacterSize(24);
+	G->loadingcapt.setFillColor(sf::Color(255, 204, 0, 255));
+	G->loadingcapt.setOutlineThickness(0.3f);
+	G->loadingcapt.setOutlineColor(sf::Color(0, 0, 0, 249));
 	
 	loadingbarbg.setPosition(sf::Vector2f(50, 600));
 	loadingbarbg.setFillColor(sf::Color(50, 50, 50, 60));
@@ -154,7 +154,7 @@ void Render::SetParams(sf::Font* font) {
 	sourceinfo.setFillColor(sf::Color::White);
 	sourceinfo.setPosition(50, 650);
 	
-	notenough.setFont(*font);
+	G->notenough.setFont(*font);
 }
 
 void Render::background(sf::RenderWindow* pwind) {
@@ -163,10 +163,10 @@ void Render::background(sf::RenderWindow* pwind) {
 
 sf::String sourcei() {
 	try {
-		return (sf::String)("Source path: " + sourcepath + "\nSource info: " + std::to_string(sw) + "x" + std::to_string(sh) + " " + sourcepath.substr(sourcepath.find_last_of(".")) + "\nComposite folder path: " + compositepath);
+		return (sf::String)("Source path: " + sourcepath + "\nSource info: " + std::to_string(G->sw) + "x" + std::to_string(G->sh) + " " + sourcepath.substr(sourcepath.find_last_of(".")) + "\nComposite folder path: " + compositepath);
 	}
 	catch (...) {
-		return (sf::String)("Source path: " + sourcepath + "\nSource info: " + std::to_string(sw) + "x" + std::to_string(sh) + " " + "" + "\nComposite folder path: " + compositepath);
+		return (sf::String)("Source path: " + sourcepath + "\nSource info: " + std::to_string(G->sw) + "x" + std::to_string(G->sh) + " " + "" + "\nComposite folder path: " + compositepath);
 	}
 	
 }
@@ -174,6 +174,13 @@ sf::String sourcei() {
 void Render::GUI(sf::RenderWindow* pwind) {
 
     //nofunc elements
+
+	G->loadingcapt.setString(G->Stage);
+	G->loadingcapt.setPosition(BAR_X / 2 - G->loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - G->loadingcapt.getLocalBounds().height / 2 + 598);
+	G->notenough.setFillColor(sf::Color(200, 200, 200, 200));
+	G->notenough.setCharacterSize(50);
+	G->notenough.setString("There was not enough clones to show this image.");
+	G->notenough.setPosition(G->sw / 2 - G->notenough.getLocalBounds().width / 2, G->sh / 2 - G->notenough.getLocalBounds().height / 2);
 
 	Color temp = getCur();
 	c = temp;
@@ -183,7 +190,7 @@ void Render::GUI(sf::RenderWindow* pwind) {
 	pwind->draw(bgrend);
 	pwind->draw(loadingbarbg);
 	pwind->draw(loadingbar);
-	pwind->draw(loadingcapt);
+	pwind->draw(G->loadingcapt);
 	pwind->draw(tabbar);
 	pwind->draw(divider);
 
@@ -192,7 +199,8 @@ void Render::GUI(sf::RenderWindow* pwind) {
 	pwind->draw(sourceinfo);
 
 	//prevwin
-	Render::RenderPrev(pwind);
+	if(!G->generating)
+	    Render::RenderPrev(pwind);
 
 
 	//buttons
@@ -217,8 +225,6 @@ void Render::GUI(sf::RenderWindow* pwind) {
 
 	//exit
 	drawing::drawExit(pwind);
-
-
 }
 
 void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
@@ -228,7 +234,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwind);
 
-	if (framecount >= 1) {
+	if (framecount >= 10) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string((int)((double)1 / frametime)));
 		framecount = 0;
 		lastframe = (int)((double)1 / frametime);
@@ -237,7 +243,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic 2.1. Report bugs/suggestions at GitHub.");
+	watermark.setString("Mosaic 2.2. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -257,7 +263,10 @@ void Render::InitUI(sf::Font* font) {
 }
 
 void Render::InitShader() {
-	S_gaussian.setUniform("texture", prevT);
+	
+	if (G->prevT.loadFromImage(rendered)) {
+		S_gaussian.setUniform("texture", G->prevT);
+	}
 	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.001f, 0));
 	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.001f));
 	if (!S_gaussian.loadFromFile("resource/gaussianBlur.hlsl", sf::Shader::Fragment)) {
@@ -268,15 +277,16 @@ void Render::InitShader() {
 float scael = 1;
 
 void Render::SetPrev() {
-	prevT.loadFromImage(rendered);
+	tt = true;
+	G->prevT.loadFromImage(rendered);
 	prevS.setColor(sf::Color(255, 255, 255, 200));
-	prevS.setTexture(prevT);
-	prevS.setTextureRect(sf::IntRect(0, 0, sw, sh));
+	prevS.setTexture(G->prevT);
+	prevS.setTextureRect(sf::IntRect(0, 0, G->sw, G->sh));
 
 
 	float t1, t2;
-	t1 = (float)((float)900 / (float)sw);
-	t2 = (float)((float)500 / (float)sh);
+	t1 = (float)((float)900 / (float)G->sw);
+	t2 = (float)((float)500 / (float)G->sh);
 	if (t1 > t2) {
 		scael = t2;
 	}
@@ -284,7 +294,7 @@ void Render::SetPrev() {
 		scael = t1;
 	}
 
-	prevS.setPosition(sf::Vector2f(900 / 2 - (sw * scael) / 2 + 50, 500 / 2 - (sh * scael) / 2 + 70)); //+700 +430
+	prevS.setPosition(sf::Vector2f(900 / 2 - (G->sw * scael) / 2 + 50, 500 / 2 - (G->sh * scael) / 2 + 70)); //+700 +430
 	prevS.setScale(sf::Vector2f(scael, scael));
 
 	prevWarn.setCharacterSize(18);
@@ -292,12 +302,12 @@ void Render::SetPrev() {
 	prevWarn.setOutlineColor(sf::Color::Black);
 	prevWarn.setOutlineThickness(0.7f);
 	prevWarn.setString("To exit the preview click out of it, alt+tab or hit Esc.");
-	if (sh > viewportY) {
+	if (G->sh > G->viewportY) {
 		prevWarn.setCharacterSize(27);
-		prevWarn.setPosition(sf::Vector2f(sw / 2 - prevWarn.getLocalBounds().width / 2, viewportY - prevWarn.getLocalBounds().height + (sh - viewportY) /2  - 10));
+		prevWarn.setPosition(sf::Vector2f(G->sw / 2 - prevWarn.getLocalBounds().width / 2, G->viewportY - prevWarn.getLocalBounds().height + (G->sh - G->viewportY) /2  - 10));
 	}
 	else {
-		prevWarn.setPosition(sf::Vector2f(sw / 2 - prevWarn.getLocalBounds().width / 2, sh - prevWarn.getLocalBounds().height - 10));
+		prevWarn.setPosition(sf::Vector2f(G->sw / 2 - prevWarn.getLocalBounds().width / 2, G->sh - prevWarn.getLocalBounds().height - 10));
 	}
 }
 
@@ -308,9 +318,11 @@ void Render::PrevClick(sf::RenderWindow* pwind) {
 
 void Render::RenderPrev(sf::RenderWindow* pwind) {
 
-	if (sw == 0 || sh == 0 || !generated) return;
+	if (G->sw == 0 || G->sh == 0 || !G->generated) return;
 
-	S_gaussian.setUniform("texture", prevT);
+
+	G->prevT.loadFromImage(rendered);
+	S_gaussian.setUniform("texture", G->prevT);
 	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.003f, 0));
 	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.003f));
 

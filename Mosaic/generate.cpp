@@ -15,7 +15,7 @@
 #include <math.h>
 #include <filesystem>
 #include <cmath>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <Psapi.h>
 #include <sysinfoapi.h>
 #include <dwmapi.h>
@@ -23,6 +23,7 @@
 #include <dwmapi.h>
 #include <unknwn.h>
 #include <gdiplus.h>
+#include <future>
 #pragma comment( lib, "gdiplus" )
 
 #include "INIReader.h"
@@ -32,46 +33,14 @@
 #include "render.h"
 #include "controls.h"
 #include "Generate.h"
+#include "GVars.h"
 
-//defines
-typedef std::vector<sf::Sprite> sprite_vector;
-typedef std::vector<sf::Texture> texture_vector;
-typedef std::vector<sf::Image> image_vector;
-typedef std::vector<sf::Color> color_vec;
+extern std::mutex mu;
 
-image_vector images(MAX_INPUT);
-sprite_vector sprites(MAX_INPUT);
-texture_vector Textures(MAX_INPUT);
-color_vec dScan_cols(MAX_SAMPLES);
-int textureScales[MAX_INPUT];
-std::string files[MAX_INPUT]; //max files
-std::string lastfiles[MAX_INPUT]; //max files
-sf::Color avg[MAX_INPUT];
-float distances[MAX_INPUT];
-bool firststt = true;
-int lastas = 0;
-bool generated = false;
-bool generating = false;
-int viewportX;
-int viewportY;
-sf::Image result;
-std::string Stage = "";
-bool abortE;
-int sw, sh;
-long long maxclones = 5000000;
-sf::Text notenough;
-CExit ExitB2;
-float noise = 0.f;
-preciseMeasure precMes[MAX_INPUT];
 
-CButton saveBut;
-CButtonDrawable saveButD;
-sf::RenderWindow genWin;
-
+extern std::unique_ptr<GVars> G;
 extern sf::Text prevWarn;
 extern std::string savepath;
-extern sf::Text loadingcapt;
-extern sf::Text bottomcapt;
 extern sf::RectangleShape loadingbarbg;
 extern sf::RectangleShape loadingbar;
 extern sf::RenderWindow* pWind;
@@ -79,15 +48,21 @@ extern float scale;
 extern bool dScan;
 extern int aspectr;
 
-
 int j = 1;
+
+
+
 
 int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* imag) {
 
 
-	generating = true;
+	G->generating = true;
+
+	G->Stage = "Starting...";
+	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 15, loadingbar.getSize().y));
+
 	try {
-		sprite_vector clones(maxclones);
+		sprite_vector clones(G->maxclones);
 	}
 	catch (std::string e) {
 		string z = "Error! > Unhandled Exception: " + e;
@@ -96,7 +71,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		return ERROR_VEC_INIT;
 	}
 
-	sprite_vector clones(maxclones); //init vector for clones
+	sprite_vector clones(G->maxclones); //init vector for clones
 
 	
 
@@ -116,9 +91,9 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		return ERROR_SOURCE;
 	}
 
-	parsing::GetImageSize(sourcp.c_str(), &sw, &sh);
+	parsing::GetImageSize(sourcp.c_str(), &G->sw, &G->sh);
 
-	if (sw == 0 || sh == 0) {
+	if (G->sw == 0 || G->sh == 0) {
 		return ERROR_SOURCE;
 	}
 
@@ -133,16 +108,13 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	sf::Color measure;
 
 	//here starts the work
-
+	
 	lw = lh = -1;
 
-	Stage = "Getting images...";
-	loadingcapt.setString(Stage);
-	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+	G->Stage = "Getting images...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 3, loadingbar.getSize().y));
-
-	Helpers::forceRender(pWind);
-
+	
+	
 	for (const auto& entry : directory_iterator(comp)) { //get paths
 
 
@@ -166,7 +138,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 				lw = cw;
 				lh = ch;
 
-				files[i] = pathh;
+				G->files[i] = pathh;
 
 			}
 			else {
@@ -176,28 +148,27 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 				parsing::GetImageSize(pth1, &cw, &ch);
 
-				files[i] = pathh1;
+				G->files[i] = pathh1;
+				
+				G->Stage = "Getting images... " + std::to_string(i);
+				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 3 + 0.17 * (i / MAX_INPUT), loadingbar.getSize().y));
 			}
 
 		}
 		i++;
-		if (abortE) {
-			Stage = "Aborted";
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+		if (G->abortE) {
+			G->Stage = "Aborted";
 			loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-			abortE = false;
+			G->abortE = false;
 			return ERROR_SUCCESS;
 		}
 	}
 
 
-
-	Stage = "Parsing textures...";
-	loadingcapt.setString(Stage);
-	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+	
+	G->Stage = "Parsing textures...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
-	Helpers::forceRender(pWind);
+	
 
 	switch (aspectr) {
 	case 0:
@@ -217,44 +188,44 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	bool isDif = false;
 
 	for (int g = 0; g < MAX_INPUT; g++)
-	{ if (lastfiles[g] != files[g]) isDif = true; }
+	{ if (G->lastfiles[g] != G->files[g]) isDif = true; }
 
-	if (!firststt) {
+	if (!G->firststt) {
 		if (isDif) {
 			for (j; j < i; j++) {
-				if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
-					std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
+				
+				if (!G->Textures[j].loadFromFile(G->files[j], sf::IntRect(0, 0, lw, lh))) {
+					std::string yeet = std::string("Error while parsing textures. Error at: " + G->files[j] + "\nDo you have enough RAM?");
 					LPCTSTR lp = (LPCTSTR)yeet.c_str();
 					MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-					Stage = "Error";
-					loadingcapt.setString(Stage);
-					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+					G->Stage = "Error";
 					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+					
 					return 0;
 				}
-				if (!images[j].loadFromFile(files[j])) {
-					std::string yeet = ("Error while creating buffer image. Error at: " + files[j] + "\nDo you have enough RAM?");
+				if (!G->images[j].loadFromFile(G->files[j])) {
+					std::string yeet = ("Error while creating buffer image. Error at: " + G->files[j] + "\nDo you have enough RAM?");
 					LPCTSTR lp = (LPCTSTR)yeet.c_str();
 					MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-					Stage = "Error";
-					loadingcapt.setString(Stage);
-					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+					G->Stage = "Error";
 					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
+					
 					return 0;
 				}
+				
 				sf::Color c1, c2, c3, c4;
 
 				int ix, iy;
 
-				std::string pathh = files[j];
+				std::string pathh = G->files[j];
 				const char* pth = pathh.c_str();
 
 				parsing::GetImageSize(pth, &ix, &iy);
 
-				c1 = images[j].getPixel((int)ix / 2, (int)iy / 2); //center
-				c2 = images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
-				c3 = images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
-				c4 = images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
+				c1 = G->images[j].getPixel((int)ix / 2, (int)iy / 2); //center
+				c2 = G->images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
+				c3 = G->images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
+				c4 = G->images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
 
 				if (dScan) {
 					int pp;
@@ -263,64 +234,58 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 					for (int p = 0; p < MAX_SAMPLES; p++) {
 						if (p >= ix * iy) break;
-						dScan_cols[p] = images[j].getPixel((int)p % ix, (int)floor(p / ix));
-						r += dScan_cols[p].r;
-						g += dScan_cols[p].g;
-						b += dScan_cols[p].b;
+						G->dScan_cols[p] = G->images[j].getPixel((int)p % ix, (int)floor(p / ix));
+						r += G->dScan_cols[p].r;
+						g += G->dScan_cols[p].g;
+						b += G->dScan_cols[p].b;
 						pp = p;
 					}
 					ir = r / pp;
 					ig = g / pp;
 					ib = b / pp;
 
-					avg[j] = sf::Color(ir, ig, ib);
+					G->avg[j] = sf::Color(ir, ig, ib);
 				}
 				else {
 					avg1 = sf::Color((c1.r + c2.r) / 2, (c1.g + c2.g) / 2, (c1.b + c2.b) / 2);
 					avg2 = sf::Color((c3.r + c4.r) / 2, (c3.g + c4.g) / 2, (c3.b + c4.b) / 2);
 
-					avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
+					G->avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
 				}
 
 
+				
+				G->Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
+				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2 + 0.08 * (j / i), loadingbar.getSize().y));
 
-				Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
-				Helpers::forceRender(pWind);
-				if (abortE) {
-					Stage = "Aborted";
-					loadingcapt.setString(Stage);
-					loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				if (G->abortE) {
+					G->Stage = "Aborted";
 					loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-					abortE = false;
+					G->abortE = false;
+					
 					return ERROR_SUCCESS;
 				}
+				
 			}
 			for (int g = 0; g < MAX_INPUT; g++)
-				lastfiles[g] = files[g];
+				G->lastfiles[g] = G->files[g];
 		}
 	}
 	else {
 		for (j; j < i; j++) {
-			if (!Textures[j].loadFromFile(files[j], sf::IntRect(0, 0, lw, lh))) {
-				std::string yeet = std::string("Error while parsing textures. Error at: " + files[j] + "\nDo you have enough RAM?");
+			if (!G->Textures[j].loadFromFile(G->files[j], sf::IntRect(0, 0, lw, lh))) {
+				std::string yeet = std::string("Error while parsing textures. Error at: " + G->files[j] + "\nDo you have enough RAM?");
 				LPCTSTR lp = (LPCTSTR)yeet.c_str();
 				MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-				Stage = "Error";
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				G->Stage = "Error";
 				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
 				return 0;
 			}
-			if (!images[j].loadFromFile(files[j])) {
-				std::string yeet = ("Error while creating buffer image. Error at: " + files[j] + "\nDo you have enough RAM?");
+			if (!G->images[j].loadFromFile(G->files[j])) {
+				std::string yeet = ("Error while creating buffer image. Error at: " + G->files[j] + "\nDo you have enough RAM?");
 				LPCTSTR lp = (LPCTSTR)yeet.c_str();
 				MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-				Stage = "Error";
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+				G->Stage = "Error";
 				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
 				return 0;
 			}
@@ -328,15 +293,15 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 			int ix, iy;
 
-			std::string pathh = files[j];
+			std::string pathh = G->files[j];
 			const char* pth = pathh.c_str();
 
 			parsing::GetImageSize(pth, &ix, &iy);
 
-			c1 = images[j].getPixel((int)ix / 2, (int)iy / 2); //center
-			c2 = images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
-			c3 = images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
-			c4 = images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
+			c1 = G->images[j].getPixel((int)ix / 2, (int)iy / 2); //center
+			c2 = G->images[j].getPixel((int)ix / 2, (int)iy / 4); //top center
+			c3 = G->images[j].getPixel((int)ix / 4, (int)iy * 0.75); //left lower
+			c4 = G->images[j].getPixel((int)ix * 0.75, (int)iy * 0.75); //right lower
 
 			if (dScan) {
 				int pp;
@@ -345,73 +310,66 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 				for (int p = 0; p < MAX_SAMPLES; p++) {
 					if (p >= ix * iy) break;
-					dScan_cols[p] = images[j].getPixel((int)p % ix, (int)floor(p / ix));
-					r += dScan_cols[p].r;
-					g += dScan_cols[p].g;
-					b += dScan_cols[p].b;
+					G->dScan_cols[p] = G->images[j].getPixel((int)p % ix, (int)floor(p / ix));
+					r += G->dScan_cols[p].r;
+					g += G->dScan_cols[p].g;
+					b += G->dScan_cols[p].b;
 					pp = p;
 				}
 				ir = r / pp;
 				ig = g / pp;
 				ib = b / pp;
 
-				avg[j] = sf::Color(ir, ig, ib);
+				G->avg[j] = sf::Color(ir, ig, ib);
 			}
 			else {
 				avg1 = sf::Color((c1.r + c2.r) / 2, (c1.g + c2.g) / 2, (c1.b + c2.b) / 2);
 				avg2 = sf::Color((c3.r + c4.r) / 2, (c3.g + c4.g) / 2, (c3.b + c4.b) / 2);
 
-				avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
+				G->avg[j] = sf::Color((avg1.r + avg2.r) / 2, (avg1.g + avg2.g) / 2, (avg1.b + avg2.b) / 2);
 			}
 
 
-
-			Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-			loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
-			Helpers::forceRender(pWind);
-			if (abortE) {
-				Stage = "Aborted";
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+			
+			G->Stage = "Parsing composite... " + std::to_string(j + 1) + " of " + std::to_string(i + 1);
+			loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2 + 0.08 * (j / i), loadingbar.getSize().y)); //something does not work :thonk:
+			if (G->abortE) {
+				G->Stage = "Aborted";
 				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-				abortE = false;
+				G->abortE = false;
+				
 				return ERROR_SUCCESS;
 			}
+			
 		}
-		firststt = false;
+		G->firststt = false;
 
 		for(int g = 0; g < MAX_INPUT; g++)
-			lastfiles[g] = files[g];
+			G->lastfiles[g] = G->files[g];
 	}
 
 	
 
 	for (ij; ij < i; ij++) {
-		sprites[ij].setTexture(Textures[ij]);
-		sprites[ij].setScale(scale, scale);
+		G->sprites[ij].setTexture(G->Textures[ij]);
+		G->sprites[ij].setScale(scale, scale);
 
-		Stage = "Assigning sprites... " + std::to_string(ij + 1) + " of " + std::to_string(i + 1);
-		loadingcapt.setString(Stage);
-		loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+		
+		G->Stage = "Assigning sprites... " + std::to_string(ij + 1) + " of " + std::to_string(i + 1);
 		loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.7f, loadingbar.getSize().y));
-		Helpers::forceRender(pWind);
-		if (abortE) {
-			Stage = "Aborted";
-			loadingcapt.setString(Stage);
-			loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+		if (G->abortE) {
+			G->Stage = "Aborted";
 			loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-			abortE = false;
+			G->abortE = false;
+			
 			return ERROR_SUCCESS;
 		}
+		
 	}
-
-	Stage = "Initializing source...";
-	loadingcapt.setString(Stage);
-	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+	
+	G->Stage = "Initializing source...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.6f, loadingbar.getSize().y));
-	Helpers::forceRender(pWind);
+	
 
 	//get viewport info
 	HWND hwnd;
@@ -426,31 +384,30 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		moninfo.cbSize = sizeof(moninfo);
 		GetMonitorInfoA(monitor, &moninfo);
 
-		viewportX = moninfo.rcMonitor.right - moninfo.rcMonitor.left;
-		viewportY = moninfo.rcMonitor.bottom - moninfo.rcMonitor.top;
+		G->viewportX = moninfo.rcMonitor.right - moninfo.rcMonitor.left;
+		G->viewportY = moninfo.rcMonitor.bottom - moninfo.rcMonitor.top;
 
-		if (sw > viewportX || sh > viewportY) {
-			std::string z = std::string("The source image is bigger than your current viewport. The full view will *not* fit on the screen. To exit, press ESC.\n\nDo not panic! Everything will be fine.\n\n(viewport size: " + std::to_string(viewportX) + "x" + std::to_string(viewportY) + ", source size: " + std::to_string(sw) + "x" + std::to_string(sh) + ")");
+		if (G->sw > G->viewportX || G->sh > G->viewportY) {
+			std::string z = std::string("The source image is bigger than your current viewport. The full view will *not* fit on the screen. To exit, press ESC.\n\nDo not panic! Everything will be fine.\n\n(viewport size: " + std::to_string(G->viewportX) + "x" + std::to_string(G->viewportY) + ", source size: " + std::to_string(G->sw) + "x" + std::to_string(G->sh) + ")");
 			LPCTSTR lp = (LPCTSTR)z.c_str();
 			MessageBox(nullptr, lp, TEXT("Warning!"), MB_OK);
 		}
 	}
-	Stage = "Generating the image...";
-	loadingcapt.setString(Stage);
-	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+	
+	G->Stage = "Generating the image...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
-	Helpers::forceRender(pWind);
+	
 
 	int cumter = 0;
 	bool fixSkip = true;
 
-	for (int x = 0; x < maxclones; x++) {
+	for (int x = 0; x < G->maxclones; x++) {
 
 		//20.09.2019 - Jesus fucking christ thanks younger me for not hardcoding a thing in here, holy shit saved me a lot of time
 		//           - Doing clone free aspect btw
 
 		if (!fixSkip) {
-			if (rowX * scale * lw > sw) {
+			if (rowX * scale * lw > G->sw) {
 				rowX = 0;
 				rowY++;
 			}
@@ -460,11 +417,11 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 			int boxX = rowX * scale * lw;
 			int boxY = rowY * scale * lh;
 
-			if (boxX + 0.5 * scale * lw > sw || boxY + 0.5 * scale * lh > sh) {
-				if (boxX < sw && boxY < sh) {
+			if (boxX + 0.5 * scale * lw > G->sw || boxY + 0.5 * scale * lh > G->sh) {
+				if (boxX < G->sw && boxY < G->sh) {
 					measure = source.getPixel((int)(boxX), (int)(boxY));
 				}
-				else if ((rowY + 1) * scale * lh < sh) {
+				else if ((rowY + 1) * scale * lh < G->sh) {
 					measure = source.getPixel((int)(0), (int)((rowY + 1) * scale * lh));
 				}
 				else {
@@ -476,11 +433,11 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 				measure = source.getPixel((int)(boxX + 0.5 * scale * lw), (int)(boxY + 0.5 * scale * lh));
 			}
 
-			if (noise > 0) {
-				clones[counter] = sprites[Helpers::getNearest3D(sf::Color(measure.r + rand() % (int)noise - noise / 2, measure.g + rand() % (int)noise - noise / 2, measure.b + rand() % (int)noise - noise / 2), i)];
+			if (G->noise > 0) {
+				clones[counter] = G->sprites[Helpers::getNearest3D(sf::Color(measure.r + rand() % (int)G->noise - G->noise / 2, measure.g + rand() % (int)G->noise - G->noise / 2, measure.b + rand() % (int)G->noise - G->noise / 2), i)];
 			}
 			else {
-				clones[counter] = sprites[Helpers::getNearest3D(measure, i)];
+				clones[counter] = G->sprites[Helpers::getNearest3D(measure, i)];
 			}
 
 			clones[counter].setPosition(rowX * scale * lw, rowY * scale * lh);
@@ -490,26 +447,23 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 			cumter++;
 
 			if (cumter > 586) {
-				Stage = "Generating the image... " + std::to_string(x + 1) + "/" + std::to_string(maxclones);
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
-				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
-				Helpers::forceRender(pWind);
+				
+				G->Stage = "Generating the image... " + std::to_string(x + 1) + "/" + std::to_string(G->maxclones);
+				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f + 0.29 * (x / G->maxclones), loadingbar.getSize().y));
 
 				cumter = 0;
+				
 			}
-			if (abortE) {
-				Stage = "Aborted";
-				loadingcapt.setString(Stage);
-				loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+			if (G->abortE) {
+				G->Stage = "Aborted";
 				loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-				abortE = false;
+				G->abortE = false;
 				return ERROR_SUCCESS;
 			}
 		}
 		else {
 			measure = source.getPixel((int)(1), (int)(1));
-			clones[counter] = sprites[Helpers::getNearest3D(measure, i)];
+			clones[counter] = G->sprites[Helpers::getNearest3D(measure, i)];
 			clones[counter].setPosition(0, 0);
 			fixSkip = false;
 			counter++;
@@ -519,44 +473,42 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	}
 
-	genWin.create(sf::VideoMode(sw, sh), "Generating", sf::Style::None);
-	genWin.setPosition(sf::Vector2i(10000, 10000));
+	G->genWin.create(sf::VideoMode(G->sw, G->sh), "Generating", sf::Style::None);
+	G->genWin.setPosition(sf::Vector2i(10000, 10000));
 
 	int render = 0;
 	int countere = 0;
-
-	Stage = "Generated!";
-	loadingcapt.setString(Stage);
-	loadingcapt.setPosition(BAR_X / 2 - loadingcapt.getLocalBounds().width / 2 + 50, BAR_Y / 2 - loadingcapt.getLocalBounds().height / 2 + 598);
+	
+	G->Stage = "Generated!";
 	loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
-	Helpers::forceRender(pWind);
 
-	notenough.setFillColor(sf::Color(200, 200, 200, 200));
-	notenough.setCharacterSize(50);
-	notenough.setString("There was not enough clones to show this image.");
-	notenough.setPosition(sw / 2 - notenough.getLocalBounds().width / 2, sh / 2 - notenough.getLocalBounds().height / 2);
 
-	while (genWin.isOpen()) {
+	
+
+	
+	while (G->genWin.isOpen()) {
 		if (render == 3) { //SFML and double-buffering, so 3
 			sf::Image capture;
-			capture = genWin.capture();
+			capture = G->genWin.capture();
 			*imag = capture;
-			result = capture;
-			genWin.close();
+			G->result = capture;
+			G->genWin.close();
 		}
-		genWin.clear();
+		G->genWin.clear();
 		for (int x = 1; x < counter; x++) {
-			genWin.draw(clones[x]);
+			G->genWin.draw(clones[x]);
 		}
-		if (counter > maxclones - 2) {
-			genWin.draw(notenough);
+		if (counter > G->maxclones - 2) {
+			G->genWin.draw(G->notenough);
 		}
-		genWin.display();
+		G->genWin.display();
 		render++;
 	}
 
-	generated = true;
-	generating = false;
+	G->generated = true;
+	G->generating = false;
+
+	
 
 }
 
@@ -574,62 +526,62 @@ void setupSave(sf::Font* font) {
 		moninfo.cbSize = sizeof(moninfo);
 		GetMonitorInfoA(monitor, &moninfo);
 
-		viewportX = moninfo.rcMonitor.right - moninfo.rcMonitor.left;
-		viewportY = moninfo.rcMonitor.bottom - moninfo.rcMonitor.top;
+		G->viewportX = moninfo.rcMonitor.right - moninfo.rcMonitor.left;
+		G->viewportY = moninfo.rcMonitor.bottom - moninfo.rcMonitor.top;
 	}
 
 
-	saveBut.w = 100;
-	saveBut.h = 30;
-	saveBut.x = sw / 2 - 50;
-	if (sh > viewportY) {
-		saveBut.y = viewportY - 70 + (sh - viewportY)/2;
+	G->saveBut.w = 100;
+	G->saveBut.h = 30;
+	G->saveBut.x = G->sw / 2 - 50;
+	if (G->sh > G->viewportY) {
+		G->saveBut.y = G->viewportY - 70 + (G->sh - G->viewportY)/2;
 	}
 	else {
-		saveBut.y = sh - 70;
+		G->saveBut.y = G->sh - 70;
 
 		
 	}
-	saveBut.callbackID = NONE;
-	saveBut.caption = "Save as...";
+	G->saveBut.callbackID = NONE;
+	G->saveBut.caption = "Save as...";
 
-	saveButD.bg.setSize(sf::Vector2f(saveBut.w, saveBut.h));
-	saveButD.bg.setPosition(sf::Vector2f(saveBut.x, saveBut.y));
-	saveButD.bg.setFillColor(sf::Color(74, 74, 74));
-	saveButD.fg.setSize(sf::Vector2f(saveBut.w - 4, saveBut.h - 4));
-	saveButD.fg.setPosition(sf::Vector2f(saveBut.x + 2, saveBut.y + 2));
-	saveButD.fg.setFillColor(sf::Color(85, 85, 85));
-	saveButD.text.setFont(*font);
-	saveButD.text.setString("Save as...");
-	saveButD.text.setCharacterSize(16);
-	saveButD.text.setFillColor(sf::Color::White);
-	saveButD.text.setPosition(saveBut.w / 2 - saveButD.text.getLocalBounds().width / 2 + saveBut.x, saveBut.h / 2 - saveButD.text.getLocalBounds().height / 2 + saveBut.y - 2);
+	G->saveButD.bg.setSize(sf::Vector2f(G->saveBut.w, G->saveBut.h));
+	G->saveButD.bg.setPosition(sf::Vector2f(G->saveBut.x, G->saveBut.y));
+	G->saveButD.bg.setFillColor(sf::Color(74, 74, 74));
+	G->saveButD.fg.setSize(sf::Vector2f(G->saveBut.w - 4, G->saveBut.h - 4));
+	G->saveButD.fg.setPosition(sf::Vector2f(G->saveBut.x + 2, G->saveBut.y + 2));
+	G->saveButD.fg.setFillColor(sf::Color(85, 85, 85));
+	G->saveButD.text.setFont(*font);
+	G->saveButD.text.setString("Save as...");
+	G->saveButD.text.setCharacterSize(16);
+	G->saveButD.text.setFillColor(sf::Color::White);
+	G->saveButD.text.setPosition(G->saveBut.w / 2 - G->saveButD.text.getLocalBounds().width / 2 + G->saveBut.x, G->saveBut.h / 2 - G->saveButD.text.getLocalBounds().height / 2 + G->saveBut.y - 2);
 	
 
-	saveBut.drawable = &saveBut;
+	G->saveBut.drawable = &G->saveBut;
 }
 
 void rendSave() {
 	int mx, my;
-	Helpers::GetCursorToWindow(&mx, &my, &genWin);
+	Helpers::GetCursorToWindow(&mx, &my, &G->genWin);
 
 	int x, y, w, h;
-	x = saveBut.x;
-	y = saveBut.y;
-	w = saveBut.w;
-	h = saveBut.h;
+	x = G->saveBut.x;
+	y = G->saveBut.y;
+	w = G->saveBut.w;
+	h = G->saveBut.h;
 
 	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
-		genWin.draw(saveButD.bg);
-		saveButD.fg.setFillColor(sf::Color(149, 149, 149));
-		genWin.draw(saveButD.fg);
-		genWin.draw(saveButD.text);
+		G->genWin.draw(G->saveButD.bg);
+		G->saveButD.fg.setFillColor(sf::Color(149, 149, 149));
+		G->genWin.draw(G->saveButD.fg);
+		G->genWin.draw(G->saveButD.text);
 	}
 	else {
-		genWin.draw(saveButD.bg);
-		saveButD.fg.setFillColor(sf::Color(85, 85, 85));
-		genWin.draw(saveButD.fg);
-		genWin.draw(saveButD.text);
+		G->genWin.draw(G->saveButD.bg);
+		G->saveButD.fg.setFillColor(sf::Color(85, 85, 85));
+		G->genWin.draw(G->saveButD.fg);
+		G->genWin.draw(G->saveButD.text);
 	}
 }
 
@@ -637,17 +589,16 @@ void SaveAs() {
 	butoncallbacks(OpenFileDialogC, nullptr, nullptr, nullptr, nullptr);
 }
 
-sf::Sprite prevS2;
-sf::Texture prevT2;
+
 
 void Generate::doView(sf::Font* font) {
 
-	genWin.create(sf::VideoMode(sw, sh), "Preview", sf::Style::None);
+	G->genWin.create(sf::VideoMode(G->sw, G->sh), "Preview", sf::Style::None);
 
-	prevT2.loadFromImage(result);
-	prevS2.setColor(sf::Color(255, 255, 255, 200));
-	prevS2.setTexture(prevT2);
-	prevS2.setTextureRect(sf::IntRect(0, 0, sw, sh));
+	G->prevT2.loadFromImage(G->result);
+	G->prevS2.setColor(sf::Color(255, 255, 255, 200));
+	G->prevS2.setTexture(G->prevT2);
+	G->prevS2.setTextureRect(sf::IntRect(0, 0, G->sw, G->sh));
 
 	setupSave(font);
 
@@ -655,50 +606,92 @@ void Generate::doView(sf::Font* font) {
 	if (icon.loadFromFile("resource/icon.png")) {
 		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 	}
+	int wnx, wny;
+	HWND window = FindWindow(NULL, TEXT("Preview"));
+	SetForegroundWindow(window);
+	GetWindowPos(&wnx, &wny, &G->genWin);
+	SetWindowPos(window, HWND_TOPMOST, wnx, wny, G->sw, G->sh, SWP_NOMOVE);
 
-	while (genWin.isOpen()) {
+	while (G->genWin.isOpen()) {
 
 		sf::Event event;
-		while (genWin.pollEvent(event))
+		while (G->genWin.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
-				genWin.close();
+				G->genWin.close();
 			if (event.type == sf::Event::LostFocus)
-				genWin.close();
+				G->genWin.close();
 			if (event.type == sf::Event::KeyPressed) {
 				if (event.key.code == sf::Keyboard::Escape) {
-					genWin.close();
+					G->genWin.close();
 				}
 			}
 			if (event.type == event.MouseButtonPressed) {
 				int mx, my;
-				Helpers::GetCursorToWindow(&mx, &my, &genWin);
+				Helpers::GetCursorToWindow(&mx, &my, &G->genWin);
 
 				int x, y, w, h;
-				x = saveBut.x;
-				y = saveBut.y;
-				w = saveBut.w;
-				h = saveBut.h;
+				x = G->saveBut.x;
+				y = G->saveBut.y;
+				w = G->saveBut.w;
+				h = G->saveBut.h;
 
 				if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
 					SaveAs();
 					if (savepath != "ERROR") {
 						std::stringstream filename;
 						filename << savepath;
-						result.saveToFile(filename.str());
+						G->result.saveToFile(filename.str());
 					}
 				}
 			}
 		}
-		genWin.clear();
-		genWin.draw(prevS2);
-		genWin.draw(prevWarn);
+		G->genWin.clear();
+		G->genWin.draw(G->prevS2);
+		G->genWin.draw(prevWarn);
 		rendSave();
-		genWin.display();
+		G->genWin.display();
 	}
 }
 
 void Generate::abort() {
-	abortE = true;
+	G->abortE = true;
+	return;
+}
+
+extern std::string sourcepath;
+extern std::string compositepath;
+extern bool threadJoined;
+extern sf::Image rendered;
+
+void Generate::Thread(sf::Font* pfont) {
+	while (0x14) {
+		switch (G->request) {
+		case generate_image:
+			if(compositepath != "" && sourcepath != "")
+				Generate::generateImage(compositepath, sourcepath, &G->renderResult);
+			rendered = G->renderResult;
+			G->request = empty;
+			break;
+		case show_window:
+			Generate::doView(pfont);
+			G->request = empty;
+			break;
+		case abort_render:
+			Generate::abort();
+			G->request = empty;
+			break;
+		default:
+			G->request = empty;
+			break;
+		}
+
+		threadJoined = true;
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
+
+void Generate::makeRequest(int rq) {
+	G->request = rq;
 	return;
 }

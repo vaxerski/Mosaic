@@ -74,6 +74,9 @@
     <ClInclude Include="Generate.h">
       <Filter>Pliki źródłowe\Generation</Filter>
     </ClInclude>
+    <ClInclude Include="GVars.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Mosaic.rc">

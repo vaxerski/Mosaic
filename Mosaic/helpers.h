@@ -35,7 +35,7 @@
 #include <math.h>
 #include <filesystem>
 #include <cmath>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <Psapi.h>
 #include <sysinfoapi.h>
 #include <dwmapi.h>
@@ -47,7 +47,7 @@
 #include "render.h"
 #include "Generate.h"
 
-using namespace std::experimental::filesystem::v1;
+using namespace std::filesystem;
 using namespace std::chrono;
 
 typedef std::vector<sf::Sprite> sprite_vector;
@@ -66,7 +66,7 @@ namespace Helpers {
 	int GetClickedTarget(int* id, sf::RenderWindow* pwnd, int*);
 	std::string openfilename(int id);
 	void Terminate();
-	bool forceRender(sf::RenderWindow* pwnd);
+	bool FrameLoopThread(sf::RenderWindow* pwnd);
 }
 
 enum GEN_ERROR_CODES {

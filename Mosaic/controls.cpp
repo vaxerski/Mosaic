@@ -14,6 +14,7 @@
 #include "helpers.h"
 #include "Generate.h"
 #include "parsing.h"
+#include "GVars.h"
 
 std::string sourcepath;
 std::string compositepath;
@@ -21,11 +22,7 @@ std::string savepath;
 float scale = 0.01f;
 sf::Image rendered;
 
-extern long long maxclones;
-extern bool generated;
-extern bool generating;
-extern int sw, sh;
-extern float noise;
+extern std::unique_ptr<GVars> G;
 extern bool dScan;
 
 int aspectr = 0;
@@ -177,6 +174,8 @@ void creating::CreateDropbox(int x, int y, int items, sf::Font* font, std::strin
 	DropboxesD[dropbs].openBox.setPosition(x, y + 30); //30 for active
 	DropboxesD[dropbs].openBox.setFillColor(sf::Color(20, 20, 20));
 	DropboxesD[dropbs].openBox.setSize(sf::Vector2f(240, 30 * items));
+	DropboxesD[dropbs].openBox.setOutlineThickness(1);
+	DropboxesD[dropbs].openBox.setOutlineColor(sf::Color::Black);
 	
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		DropboxesD[dropbs].itemsT[i].setFont(*font);
@@ -257,7 +256,7 @@ int drawing::drawButton(sf::RenderWindow* pwind, int id) {
 
 	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
 		if (id == 2) {
-			if (!generating) {
+			if (!G->generating) {
 				ButtonsD[id].text.setString("Generate!");
 				ButtonsD[id].text.setPosition(w / 2 - ButtonsD[id].text.getLocalBounds().width / 2 + x, h / 2 - ButtonsD[id].text.getLocalBounds().height / 2 + y);
 			}
@@ -273,7 +272,7 @@ int drawing::drawButton(sf::RenderWindow* pwind, int id) {
 	}
 	else {
 		if (id == 2) {
-			if (!generating) {
+			if (!G->generating) {
 				ButtonsD[id].text.setString("Generate!");
 				ButtonsD[id].text.setPosition(w / 2 - ButtonsD[id].text.getLocalBounds().width / 2 + x, h / 2 - ButtonsD[id].text.getLocalBounds().height / 2 + y);
 			}
@@ -314,7 +313,7 @@ int drawing::drawCheckbox(sf::RenderWindow* pwind, int id) {
 			CheckBoxesD[id].box.setFillColor(sf::Color(255, 202, 105));
 		}
 		else {
-			if (noise > 0 && id == 0) { //inc 0 check with noise
+			if (G->noise > 0 && id == 0) { //inc 0 check with noise
 				CheckBoxesD[id].text.setString("Incompatible with noise!");
 			}
 			else {
@@ -355,7 +354,7 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 	w = Sliders[id].w;
 	h = 15;
 
-	if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+	if (x < mx && mx < x + w && y - 5 < my && my < y + h - 5) {  //hover
 		pwind->draw(SlidersD[id].bar);
 		SlidersD[id].zip.setFillColor(sf::Color(180, 180, 180));
 		SlidersD[id].zip.setPosition(sf::Vector2f(Sliders[id].val / Sliders[id].max * w + x, y - 2));
@@ -564,8 +563,8 @@ void dispatchPath(std::string path, int id) {
 		int sew, seh;
 		parsing::GetImageSize(sourcepath.c_str(), &sew, &seh);
 
-		sw = sew;
-		sh = seh;
+		G->sw = sew;
+		G->sh = seh;
 	}
 	else if (id == OpenFileDialogB) {
 		compositepath = path;
@@ -604,12 +603,12 @@ void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3, 
 		break;
 	case CallGenerate:
 		//generate the image
-		if (!generating)Generate::generateImage(compositepath, sourcepath, &rendered);
-		else Generate::abort();
+		if (!G->generating)Generate::makeRequest(generate_image);
+		else Generate::makeRequest(abort_render);
 		Render::SetPrev();
 		break;
 	case CallViewRender:
-		Generate::doView(arg1);
+		Generate::makeRequest(show_window);
 		break;
 	case OpenFileDialogC:
 		path = Helpers::openfilename(2);
@@ -668,11 +667,11 @@ void setSliderVal(int id, float val) {
 		}
 	}
 	else if (id == 1) {
-		maxclones = (long long)val;
+		G->maxclones = (long long)val;
 		Sliders[id].val = (long long)val;
 	}
 	else if (id == 2) {
-		noise = val;
+		G->noise = val;
 		Sliders[id].val = val;
 	}
 }

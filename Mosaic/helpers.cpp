@@ -17,22 +17,33 @@
 #include <shlwapi.h>
 #include <strsafe.h>
 #include "Generate.h"
+#include <future>
+#include "GVars.h"
 
+extern std::mutex mu;
+extern std::unique_ptr<GVars> G;
 
+int lmx, lmy;
+bool dragging = false;
+int what = errortype;
+int whatid = -1;
+extern BOOL shader;
+
+extern sf::RenderWindow* pWind;
+extern sf::Font* pFont;
+
+static bool terminateB = false;
 
 #define M_PI 3.14159265358979f
 
 using namespace std::chrono;
 
-extern sf::Color avg[MAX_INPUT];
-extern float distances[MAX_INPUT];
-extern preciseMeasure precMes[MAX_INPUT];
 extern high_resolution_clock::time_point timeorigin;
 extern high_resolution_clock::time_point frame;
 extern bool generated;
 
 int Helpers::getNearest3D(sf::Color source, int scanRange) {
-	int leader;
+	int leader = 0;
 	float distance = 1337;
 	float dis;
 
@@ -43,12 +54,12 @@ int Helpers::getNearest3D(sf::Color source, int scanRange) {
 	int r1, g1, b1;
 
 	for (int x = 1; x < scanRange; x++) {
-		r1 = avg[x].r;
-		g1 = avg[x].g;
-		b1 = avg[x].b;
+		r1 = G->avg[x].r;
+		g1 = G->avg[x].g;
+		b1 = G->avg[x].b;
 
 		dis = sqrt(pow((r - r1), 2) + pow((g - g1), 2) + pow((b - b1), 2));
-		distances[x] = dis;
+		G->distances[x] = dis;
 
 		if (dis < distance) {
 			leader = x;
@@ -70,9 +81,9 @@ int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
 		int g1 = in.c1.g;
 		int b1 = in.c1.b;
 
-		int r1a = precMes[x].c1.r;
-		int g1a = precMes[x].c1.g;
-		int b1a = precMes[x].c1.b;
+		int r1a = G->precMes[x].c1.r;
+		int g1a = G->precMes[x].c1.g;
+		int b1a = G->precMes[x].c1.b;
 
 		dis1 = sqrt(pow((r1 - r1a), 2) + pow((g1 - g1a), 2) + pow((b1 - b1a), 2));
 
@@ -80,9 +91,9 @@ int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
 		int g2 = in.c2.g;
 		int b2 = in.c2.b;
 
-		int r2a = precMes[x].c2.r;
-		int g2a = precMes[x].c2.g;
-		int b2a = precMes[x].c2.b;
+		int r2a = G->precMes[x].c2.r;
+		int g2a = G->precMes[x].c2.g;
+		int b2a = G->precMes[x].c2.b;
 
 		dis2 = sqrt(pow((r2 - r2a), 2) + pow((g2 - g2a), 2) + pow((b2 - b2a), 2));
 
@@ -90,9 +101,9 @@ int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
 		int g3 = in.c3.g;
 		int b3 = in.c3.b;
 
-		int r3a = precMes[x].c3.r;
-		int g3a = precMes[x].c3.g;
-		int b3a = precMes[x].c3.b;
+		int r3a = G->precMes[x].c3.r;
+		int g3a = G->precMes[x].c3.g;
+		int b3a = G->precMes[x].c3.b;
 
 		dis3 = sqrt(pow((r3 - r3a), 2) + pow((g3 - g3a), 2) + pow((b3 - b3a), 2));
 
@@ -100,9 +111,9 @@ int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
 		int g4 = in.c4.g;
 		int b4 = in.c4.b;
 
-		int r4a = precMes[x].c4.r;
-		int g4a = precMes[x].c4.g;
-		int b4a = precMes[x].c4.b;
+		int r4a = G->precMes[x].c4.r;
+		int g4a = G->precMes[x].c4.g;
+		int b4a = G->precMes[x].c4.b;
 
 		dis4 = sqrt(pow((r4 - r4a), 2) + pow((g4 - g4a), 2) + pow((b4 - b4a), 2));
 
@@ -274,53 +285,159 @@ Color TransformH(const Color& in, float H)
 	return ret;
 }
 
-bool Helpers::forceRender(sf::RenderWindow* pWind){
-	timeorigin = high_resolution_clock::now();
-	sf::Event event;
-	while (pWind->pollEvent(event))
-	{
-		if (event.type == sf::Event::Closed)
-			pWind->close();
-		if (event.type == sf::Event::MouseButtonPressed) {
-			if (event.mouseButton.button == sf::Mouse::Left) {
-				int id, type, groupo;
-				type = Helpers::GetClickedTarget(&id, pWind, &groupo);
-				int mx, my;
-				Helpers::GetCursorToWindow(&mx, &my, pWind);
 
-				switch (type) {
-				case button:
-					//buttonclick
-					butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, nullptr, pWind, nullptr, nullptr);
-					break;
-				case exitbutton:
-					//exit button
-					butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, nullptr, pWind, nullptr, nullptr);
-					break;
+
+void Helpers::Terminate() {
+	terminateB = true;
+	return;
+}
+
+extern bool threadJoined;
+
+bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
+	mu.lock();
+
+	//check for running mosaic
+	HWND isLaunched = NULL;
+	HMONITOR monitor;
+	isLaunched = FindWindow(NULL, TEXT("Mosaic 2"));
+	monitor = MonitorFromWindow(isLaunched, MONITOR_DEFAULTTONULL);
+	if (monitor != NULL) {
+		SetForegroundWindow(isLaunched);
+		mu.unlock();
+		return ERROR;
+	}
+
+	if (sf::Shader::isAvailable()) {
+		shader = true;
+	}
+
+	pWind->create(sf::VideoMode(WINDX, WINDY), "Mosaic 2", sf::Style::None);
+	pWind->setFramerateLimit(240);
+
+	MARGINS margins;
+	margins.cxLeftWidth = -1;
+
+	SetWindowLong(pWind->getSystemHandle(), GWL_STYLE, WS_POPUP | WS_VISIBLE);
+	DwmExtendFrameIntoClientArea(pWind->getSystemHandle(), &margins);
+
+
+	if (!pFont->loadFromFile("resource/font.ttf")) {
+		MessageBox(nullptr, "Couldn't load font", TEXT("Fatal Error"), MB_OK);
+		mu.unlock();
+		return ERROR;
+	}
+
+	sf::Image icon;
+	if (icon.loadFromFile("resource/icon.png")) {
+		window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+	}
+
+	//setup all
+	Render::SetParams(pFont);
+	Render::InitUI(pFont);
+	if (shader) Render::InitShader();
+
+	mu.unlock();
+	//start rendering
+	while (0x14) {
+		if (terminateB) {
+			return ERROR_SUCCESS;
+			//end program
+		}
+
+		if (!threadJoined) continue;
+
+		timeorigin = high_resolution_clock::now();
+		sf::Event event;
+		while (pWind->pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+				pWind->close();
+			if (event.type == sf::Event::MouseButtonPressed) {
+				if (event.mouseButton.button == sf::Mouse::Left) {
+					int id, type, groupid;
+					type = Helpers::GetClickedTarget(&id, pWind, &groupid);
+					int mx, my;
+					Helpers::GetCursorToWindow(&mx, &my, pWind);
+
+					switch (type) {
+					case topbar:
+						//move window
+						dragging = true;
+						what = topbar;
+						break;
+					case button:
+						//buttonclick
+						butoncallbacks(reinterpret_cast<CButton*>(getPointerA(button, id))->callbackID, pFont, pWind, nullptr, nullptr);
+						break;
+					case exitbutton:
+						//exit button
+						butoncallbacks(reinterpret_cast<CExit*>(getPointerA(exitbutton, id))->callback, pFont, pWind, nullptr, nullptr);
+						break;
+					case slider:
+						//slider
+						dragging = true;
+						what = slider;
+						whatid = id;
+						break;
+					case checkbox:
+						butoncallbacks(CHECKBOXCALLBACK, nullptr, nullptr, reinterpret_cast<CCheckbox*>(getPointerA(checkbox, id))->callback, nullptr);
+						break;
+					case dropbox:
+						butoncallbacks(DropBoxCallBack, nullptr, nullptr, &groupid, &id);
+						break;
+					}
+				}
+			}
+			if (event.type == sf::Event::MouseButtonReleased) {
+				if (event.mouseButton.button == sf::Mouse::Left) {
+					dragging = false;
 				}
 			}
 		}
-		if (event.type == sf::Event::MouseButtonReleased) {
-			//removed event handling for forced frame
+
+		if (dragging && what != errortype) {
+			switch (what) {
+			case topbar:
+				int mx, my;
+				Helpers::GetCursorToWindow(&mx, &my, pWind);
+
+				int wx, wy;
+				GetWindowPos(&wx, &wy, pWind);
+
+				if (lmx == 0 || lmy == 0) {
+					lmx = mx;
+					lmy = my;
+				}
+
+				pWind->setPosition(sf::Vector2i(wx + (mx - lmx), wy + (my - lmy)));
+				break;
+			case slider:
+				Helpers::GetCursorToWindow(&mx, &my, pWind);
+				float rs = calcSlider(mx, my, whatid);
+				setSliderVal(whatid, rs);
+				break;
+			}
 		}
+		else {
+			lmx = lmy = 0;
+			what = errortype;
+			whatid = -1;
+		}
+
+
+
+
+		pWind->clear(sf::Color::Transparent);
+		Render::GUI(pWind);
+
+		frame = high_resolution_clock::now();
+		std::chrono::steady_clock::duration delta = frame - timeorigin;
+
+		Render::DebugInfo(pWind, (double)((double)delta.count() / (double)1000000000));
+		pWind->display();
 	}
-
-	//removed event handling for forced frame
-
-
-	pWind->clear(sf::Color::Transparent);
-
-	Render::GUI(pWind);
-
-	frame = high_resolution_clock::now();
-	std::chrono::steady_clock::duration delta = frame - timeorigin;
-
-	Render::DebugInfo(pWind, (double)((double)delta.count() / (double)1000000000));
-
-	pWind->display();
-
-	generated = false;
-
 	return true;
 }
 
