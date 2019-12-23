@@ -155,6 +155,9 @@ void Render::SetParams(sf::Font* font) {
 	sourceinfo.setPosition(50, 650);
 	
 	G->notenough.setFont(*font);
+
+	G->overlay.setColor(sf::Color(255, 255, 255, 255));
+	G->overlay2.setColor(sf::Color(255, 255, 255, 255));
 }
 
 void Render::background(sf::RenderWindow* pwind) {
@@ -243,7 +246,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic 2.2. Report bugs/suggestions at GitHub.");
+	watermark.setString("Mosaic 2.3. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -255,10 +258,11 @@ void Render::InitUI(sf::Font* font) {
 	creating::CreateButton(1010, 700, 240, 50, "Generate!", font, CallGenerate, true);
 	creating::CreateButton(400, 295, 200, 50, "Click here to view...", font, CallViewRender, false);
 	creating::CreateSlider(1010, 230, 240, "Precision point", font, false, 0.01f, 0.0001f, 0.02f);
-	creating::CreateSlider(1010, 270, 240, "Max clones", font, false, 5000000, 10000, 50000000);
+	creating::CreateSlider(1010, 270, 240, "Max clones", font, false, 10000, 10000, 50000000);
 	creating::CreateSlider(1010, 310, 240, "Noise amount", font, false, 0.f, 0.f, 15.f);
+	creating::CreateSlider(1010, 350, 240, "Overlay Alpha", font, false, 0.f, 0.f, 255.f);
 	//creating::CreateCheckbox(1010, 380, 0, "Advanced Scan (slower!)", font, &dScan, true);
-	creating::CreateDropbox(1010, 350, 3, font, new std::string[MAX_ITEMS]{"16:9", "4:3", "1:1"}, 0, "Clone aspect ratio");
+	creating::CreateDropbox(1010, 390, 3, font, new std::string[MAX_ITEMS]{"16:9", "4:3", "1:1"}, 0, "Clone aspect ratio");
 	creating::CreateExit(font);
 }
 
@@ -296,6 +300,10 @@ void Render::SetPrev() {
 
 	prevS.setPosition(sf::Vector2f(900 / 2 - (G->sw * scael) / 2 + 50, 500 / 2 - (G->sh * scael) / 2 + 70)); //+700 +430
 	prevS.setScale(sf::Vector2f(scael, scael));
+	G->overlay.setPosition(sf::Vector2f(900 / 2 - (G->sw * scael) / 2 + 50, 500 / 2 - (G->sh * scael) / 2 + 70)); //+700 +430
+	G->overlay.setScale(sf::Vector2f(scael, scael));
+	G->overlay2.setPosition(sf::Vector2f(0,0));
+	G->overlay2.setScale(sf::Vector2f(1, 1));
 
 	prevWarn.setCharacterSize(18);
 	prevWarn.setFillColor(sf::Color::White);
@@ -326,8 +334,6 @@ void Render::RenderPrev(sf::RenderWindow* pwind) {
 	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.003f, 0));
 	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.003f));
 
-	
-
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwind);
 
@@ -344,5 +350,9 @@ void Render::RenderPrev(sf::RenderWindow* pwind) {
 	else {
 		pwind->draw(prevS);
 		setrenderable(3, false);
+		if (G->overlayA != 0) {
+			G->overlay.setColor(sf::Color(255, 255, 255, G->overlayA));
+			pwind->draw(G->overlay);
+		}
 	}
 }

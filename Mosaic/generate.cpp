@@ -61,17 +61,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	G->Stage = "Starting...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 15, loadingbar.getSize().y));
 
-	try {
-		sprite_vector clones(G->maxclones);
-	}
-	catch (std::string e) {
-		string z = "Error! > Unhandled Exception: " + e;
-		LPCTSTR lp = (LPCTSTR)z.c_str();
-		MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
-		return ERROR_VEC_INIT;
-	}
-
-	sprite_vector clones(G->maxclones); //init vector for clones
+	
 
 	
 
@@ -114,6 +104,10 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	G->Stage = "Getting images...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 3, loadingbar.getSize().y));
 	
+	if (G->request == abort_render) {
+		G->request = empty;
+		return ERROR_ABORTED;
+	}
 	
 	for (const auto& entry : directory_iterator(comp)) { //get paths
 
@@ -163,8 +157,10 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 			return ERROR_SUCCESS;
 		}
 	}
-
-
+	if (G->request == abort_render) {
+		G->request = empty;
+		return ERROR_ABORTED;
+	}
 	
 	G->Stage = "Parsing textures...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 2, loadingbar.getSize().y));
@@ -185,7 +181,40 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		break;
 	}
 
+	long long maxclonesR; //init maxclones amount here, for auto mode.
+
+	if (!G->clonesAutoMode)
+		maxclonesR = G->maxclones;  //ez pz
+	else { //initialize maxclonesR properly, auto mode.
+		//lw, lh - composite set above.
+		//sw, sh - set when dispatched path. (Globals)
+		//scale - set with the slider.
+
+		float rows = (double)G->sw / (double)((double)lw * (double)scale);
+		float cols = (double)G->sh / (double)((double)lh * (double)scale);
+
+		long long calc = rows * cols + 1000; //for safety 1000 :)
+		maxclonesR = calc;
+	}
+
+	try {
+		sprite_vector clones(maxclonesR);
+	}
+	catch (std::string e) {
+		string z = "Error! > Unhandled Exception: " + e;
+		LPCTSTR lp = (LPCTSTR)z.c_str();
+		MessageBox(nullptr, lp, TEXT("Fatal Error"), MB_OK);
+		return ERROR_VEC_INIT;
+	}
+
+	sprite_vector clones(maxclonesR); //init vector for clones
+
 	bool isDif = false;
+
+	if (G->request == abort_render) {
+		G->request = empty;
+		return ERROR_ABORTED;
+	}
 
 	for (int g = 0; g < MAX_INPUT; g++)
 	{ if (G->lastfiles[g] != G->files[g]) isDif = true; break; }
@@ -352,7 +381,10 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		G->laspectr = aspectr;
 	}
 
-	
+	if (G->request == abort_render) {
+		G->request = empty;
+		return ERROR_ABORTED;
+	}
 
 	for (ij; ij < i; ij++) {
 		G->sprites[ij].setTexture(G->Textures[ij]);
@@ -391,21 +423,28 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		G->viewportX = moninfo.rcMonitor.right - moninfo.rcMonitor.left;
 		G->viewportY = moninfo.rcMonitor.bottom - moninfo.rcMonitor.top;
 
-		if (G->sw > G->viewportX || G->sh > G->viewportY) {
+	/*	if (G->sw > G->viewportX || G->sh > G->viewportY) {
 			std::string z = std::string("The source image is bigger than your current viewport. The full view will *not* fit on the screen. To exit, press ESC.\n\nDo not panic! Everything will be fine.\n\n(viewport size: " + std::to_string(G->viewportX) + "x" + std::to_string(G->viewportY) + ", source size: " + std::to_string(G->sw) + "x" + std::to_string(G->sh) + ")");
 			LPCTSTR lp = (LPCTSTR)z.c_str();
 			MessageBox(nullptr, lp, TEXT("Warning!"), MB_OK);
-		}
+			HWND yes = FindWindow(NULL, TEXT("Warning!"));
+			SetForegroundWindow(yes);
+		}*/
+		//fuck this yknow, bugs when out of focus
 	}
 	
 	G->Stage = "Generating the image...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f, loadingbar.getSize().y));
 	
+	if (G->request == abort_render) {
+		G->request = empty;
+		return ERROR_ABORTED;
+	}
 
 	int cumter = 0;
 	bool fixSkip = true;
 
-	for (int x = 0; x < G->maxclones; x++) {
+	for (int x = 0; x < maxclonesR; x++) {
 
 		//20.09.2019 - Jesus fucking christ thanks younger me for not hardcoding a thing in here, holy shit saved me a lot of time
 		//           - Doing clone free aspect btw
@@ -452,10 +491,14 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 			if (cumter > 586) {
 				
-				G->Stage = "Generating the image... " + std::to_string(x + 1) + "/" + std::to_string(G->maxclones);
-				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f + 0.29 * (x / G->maxclones), loadingbar.getSize().y));
+				G->Stage = "Generating the image... " + std::to_string(x + 1) + "/" + std::to_string(maxclonesR);
+				loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.4f + 0.29 * (x / maxclonesR), loadingbar.getSize().y));
 
 				cumter = 0;
+				if (G->request == abort_render) {
+					G->request = empty;
+					return ERROR_ABORTED;
+				}
 				
 			}
 			if (G->abortE) {
@@ -489,10 +532,10 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	
 
-	
+	sf::Image capture;
 	while (G->genWin.isOpen()) {
 		if (render == 3) { //SFML and double-buffering, so 3
-			sf::Image capture;
+			
 			capture = G->genWin.capture();
 			*imag = capture;
 			G->result = capture;
@@ -502,18 +545,24 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		for (int x = 1; x < counter; x++) {
 			G->genWin.draw(clones[x]);
 		}
-		if (counter > G->maxclones - 2) {
+		if (counter > maxclonesR - 2) {
 			G->genWin.draw(G->notenough);
 		}
 		G->genWin.display();
 		render++;
 	}
 
+	if (!G->overlayT.loadFromImage(source)) {
+		MessageBox(nullptr, TEXT("Error question mark?"), TEXT("Warning!"), MB_OK);
+	}
+	
+	G->overlay.setTexture(G->overlayT);
+	G->overlay2.setTexture(G->overlayT);
+
 	G->generated = true;
 	G->generating = false;
 
-	
-
+	return ERROR_GEN_SUCCESS;
 }
 
 void setupSave(sf::Font* font) {
@@ -593,10 +642,10 @@ void SaveAs() {
 	butoncallbacks(OpenFileDialogC, nullptr, nullptr, nullptr, nullptr);
 }
 
-
+int dbfcounter = 0;
 
 void Generate::doView(sf::Font* font) {
-
+	G->isInPrev = true;
 	G->genWin.create(sf::VideoMode(G->sw, G->sh), "Preview", sf::Style::None);
 
 	G->prevT2.loadFromImage(G->result);
@@ -614,20 +663,26 @@ void Generate::doView(sf::Font* font) {
 	HWND window = FindWindow(NULL, TEXT("Preview"));
 	SetForegroundWindow(window);
 	GetWindowPos(&wnx, &wny, &G->genWin);
-	SetWindowPos(window, HWND_TOPMOST, wnx, wny, G->sw, G->sh, SWP_NOMOVE);
+	SetWindowPos(window, HWND_TOP, wnx, wny, G->sw, G->sh, SWP_NOMOVE);
+
+	G->overlay2.setScale(1, 1);
+	G->overlay2.setPosition(sf::Vector2f(0, 0));
 
 	while (G->genWin.isOpen()) {
 
 		sf::Event event;
 		while (G->genWin.pollEvent(event))
 		{
-			if (event.type == sf::Event::Closed)
-				G->genWin.close();
-			if (event.type == sf::Event::LostFocus)
-				G->genWin.close();
+			if (event.type == sf::Event::Closed) {
+				G->genWin.close(); G->isInPrev = false;
+			}
+			if (event.type == sf::Event::LostFocus && dbfcounter == 0) {
+				G->genWin.close(); G->isInPrev = false;
+			}
 			if (event.type == sf::Event::KeyPressed) {
 				if (event.key.code == sf::Keyboard::Escape) {
 					G->genWin.close();
+					G->isInPrev = false;
 				}
 			}
 			if (event.type == event.MouseButtonPressed) {
@@ -641,19 +696,42 @@ void Generate::doView(sf::Font* font) {
 				h = G->saveBut.h;
 
 				if (x < mx && mx < x + w && y < my && my < y + h) {  //hover
+					dbfcounter = 2; //double-buffering shit
 					SaveAs();
-					if (savepath != "ERROR") {
-						std::stringstream filename;
-						filename << savepath;
-						G->result.saveToFile(filename.str());
-					}
 				}
 			}
 		}
+		G->overlay2.setScale(1, 1);
+		G->overlay2.setPosition(sf::Vector2f(0, 0));
 		G->genWin.clear();
 		G->genWin.draw(G->prevS2);
-		G->genWin.draw(prevWarn);
-		rendSave();
+		if (G->overlayA != 0) {
+			G->overlay2.setColor(sf::Color(255, 255, 255, G->overlayA));
+			G->genWin.draw(G->overlay2);
+		}
+
+		if (dbfcounter != 0) {
+			if (dbfcounter == 1) {
+				dbfcounter = 0;
+				if (savepath != "ERROR") {
+					sf::Image capture = G->genWin.capture();
+					std::stringstream filename;
+					filename << savepath;
+					capture.saveToFile(filename.str());
+					G->isInPrev = false;
+					G->genWin.close();
+					return;
+				}
+			}
+			else {
+				dbfcounter -= 1;
+			}
+		}
+		else {
+			G->genWin.draw(prevWarn);
+			rendSave();
+		}
+
 		G->genWin.display();
 	}
 }
@@ -673,9 +751,27 @@ void Generate::Thread(sf::Font* pfont) {
 		switch (G->request) {
 		case generate_image:
 			if(compositepath != "" && sourcepath != "")
-				Generate::generateImage(compositepath, sourcepath, &G->renderResult);
+				switch (Generate::generateImage(compositepath, sourcepath, &G->renderResult)) {
+				case ERROR_VEC_INIT:
+					G->Stage = "Vector init error.";
+					break;
+				case ERROR_SOURCE:
+					G->Stage = "Source error. Maybe the image is invalid?";
+					break;
+				case ERROR_COMPOSITE:
+					G->Stage = "Composite error.";
+					break;
+				case ERROR_ABORTED:
+					G->Stage = "Aborted.";
+					break;
+				case ERROR_GEN_SUCCESS:
+					G->Stage = "Generated!";
+					break;
+				}
 			rendered = G->renderResult;
 			G->request = empty;
+			G->generated = true;
+			G->generating = false;
 			break;
 		case show_window:
 			Generate::doView(pfont);

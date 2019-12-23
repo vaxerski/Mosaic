@@ -361,6 +361,14 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 		
 		if (id == 1) {
 			temp.erase(temp.find_last_of('.'), std::string::npos);
+			if (Sliders[id].val == 10000) {  //for auto, not to change during gen.
+				temp = "auto";
+				if(!G->generating) //dont change while gen
+					G->clonesAutoMode = true;
+			}
+			else if(!G->generating){
+				G->clonesAutoMode = false;
+			}
 		}
 		else {
 			temp.erase(temp.find_last_not_of('0') + 1, std::string::npos);
@@ -379,6 +387,14 @@ int drawing::drawSlider(sf::RenderWindow* pwind, int id) {
 		
 		if (id == 1) {
 			temp.erase(temp.find_last_of('.'), std::string::npos);
+			if (Sliders[id].val == 10000) {  //for auto, not to change during gen.
+				temp = "auto";
+				if (!G->generating) //dont change while gen
+					G->clonesAutoMode = true;
+			}
+			else if (!G->generating) {
+				G->clonesAutoMode = false;
+			}
 		}
 		else {
 			temp.erase(temp.find_last_not_of('0') + 1, std::string::npos);
@@ -672,6 +688,10 @@ void setSliderVal(int id, float val) {
 	}
 	else if (id == 2) {
 		G->noise = val;
+		Sliders[id].val = val;
+	}
+	else if (id == 3) {
+		G->overlayA = val;
 		Sliders[id].val = val;
 	}
 }

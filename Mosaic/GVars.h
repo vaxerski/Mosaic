@@ -42,4 +42,10 @@ public:
 	sf::Text bottomcapt;
 	sf::Texture prevT;
 	float laspectr;
+	sf::Sprite overlay;
+	sf::Sprite overlay2;
+	float overlayA;
+	sf::Texture overlayT;
+	bool isInPrev;
+	bool clonesAutoMode;
 };

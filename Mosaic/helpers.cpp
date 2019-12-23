@@ -233,6 +233,8 @@ std::string Helpers::openfilename(int id) {
 		ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 		ofn.lpstrDefExt = "";
 
+		SetForegroundWindow(ofn.hwndOwner);
+
 		string fileNameStr;
 		if (GetOpenFileName(&ofn))
 			fileNameStr = fileName;
@@ -260,11 +262,15 @@ std::string Helpers::openfilename(int id) {
 		ofn.Flags = OFN_EXPLORER | OFN_HIDEREADONLY;
 		ofn.lpstrDefExt = "";
 
+		SetForegroundWindow(ofn.hwndOwner);
+
 		string fileNameStr;
 		if (GetSaveFileName(&ofn))
 			fileNameStr = fileName;
 		return fileNameStr;
 	}
+
+	
 }
 
 Color TransformH(const Color& in, float H)
@@ -429,10 +435,8 @@ bool Helpers::FrameLoopThread(sf::RenderWindow* pWind){
 			whatid = -1;
 		}
 
-
-
-
 		pWind->clear(sf::Color::Transparent);
+
 		Render::GUI(pWind);
 
 		frame = high_resolution_clock::now();

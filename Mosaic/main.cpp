@@ -69,7 +69,7 @@ std::mutex mu;
 
 int main(int argc, char* argv[]) {
 	G = std::make_unique<GVars>();
-
+	G->isInPrev = false;
 	auto renderer = std::async(std::launch::async, Helpers::FrameLoopThread, pWind);
 	auto generator = std::async(std::launch::async, Generate::Thread, pFont);
 
