@@ -476,7 +476,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 				measure = source.getPixel((int)(boxX + 0.5 * scale * lw), (int)(boxY + 0.5 * scale * lh));
 			}
 
-			if (G->noise > 0) {
+			if (G->noise > 1) { //well apparently you cant divide by zero
 				clones[counter] = G->sprites[Helpers::getNearest3D(sf::Color(measure.r + rand() % (int)G->noise - G->noise / 2, measure.g + rand() % (int)G->noise - G->noise / 2, measure.b + rand() % (int)G->noise - G->noise / 2), i)];
 			}
 			else {
