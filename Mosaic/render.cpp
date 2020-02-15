@@ -246,7 +246,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic 2.3. Report bugs/suggestions at GitHub.");
+	watermark.setString("Mosaic 2.3a. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -270,10 +270,10 @@ void Render::InitShader() {
 	
 	if (G->prevT.loadFromImage(rendered)) {
 		S_gaussian.setUniform("texture", G->prevT);
+		S_gaussian.setUniform("blur_radius", sf::Vector2f(0.005f, 0));
+		S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.005f));
 	}
-	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.001f, 0));
-	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.001f));
-	if (!S_gaussian.loadFromFile("resource/gaussianBlur.hlsl", sf::Shader::Fragment)) {
+	if (!S_gaussian.loadFromFile("resource/gaussianBlur.glsl", sf::Shader::Fragment)) {
 		MessageBox(NULL, TEXT("shader failed."), TEXT("Initializing error."), NULL);
 	}
 }
@@ -298,12 +298,20 @@ void Render::SetPrev() {
 		scael = t1;
 	}
 
+	
+	S_gaussian.setUniform("texture", G->prevT);
+	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.005f, 0));
+	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.005f));
+
 	prevS.setPosition(sf::Vector2f(900 / 2 - (G->sw * scael) / 2 + 50, 500 / 2 - (G->sh * scael) / 2 + 70)); //+700 +430
 	prevS.setScale(sf::Vector2f(scael, scael));
+	G->overlay.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(G->sw, G->sh)));
 	G->overlay.setPosition(sf::Vector2f(900 / 2 - (G->sw * scael) / 2 + 50, 500 / 2 - (G->sh * scael) / 2 + 70)); //+700 +430
 	G->overlay.setScale(sf::Vector2f(scael, scael));
+	G->overlay2.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(G->sw, G->sh)));
 	G->overlay2.setPosition(sf::Vector2f(0,0));
 	G->overlay2.setScale(sf::Vector2f(1, 1));
+	
 
 	prevWarn.setCharacterSize(18);
 	prevWarn.setFillColor(sf::Color::White);
@@ -328,11 +336,7 @@ void Render::RenderPrev(sf::RenderWindow* pwind) {
 
 	if (G->sw == 0 || G->sh == 0 || !G->generated) return;
 
-
-	G->prevT.loadFromImage(rendered);
-	S_gaussian.setUniform("texture", G->prevT);
-	S_gaussian.setUniform("blur_radius", sf::Vector2f(0.003f, 0));
-	S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.003f));
+	
 
 	int mx, my;
 	Helpers::GetCursorToWindow(&mx, &my, pwind);

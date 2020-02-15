@@ -621,7 +621,7 @@ void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3, 
 		//generate the image
 		if (!G->generating)Generate::makeRequest(generate_image);
 		else Generate::makeRequest(abort_render);
-		Render::SetPrev();
+		
 		break;
 	case CallViewRender:
 		Generate::makeRequest(show_window);

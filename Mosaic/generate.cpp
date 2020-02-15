@@ -47,14 +47,16 @@ extern sf::RenderWindow* pWind;
 extern float scale;
 extern bool dScan;
 extern int aspectr;
+extern bool mapClear;
 
 int j = 1;
 
 
-
+bool isDif = false;
 
 int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* imag) {
 
+	isDif = false;
 
 	G->generating = true;
 
@@ -209,17 +211,20 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	sprite_vector clones(maxclonesR); //init vector for clones
 
-	bool isDif = false;
+	
 
 	if (G->request == abort_render) {
 		G->request = empty;
 		return ERROR_ABORTED;
 	}
 
-	for (int g = 0; g < MAX_INPUT; g++)
-	{ if (G->lastfiles[g] != G->files[g]) isDif = true; break; }
+	
 
 	if (!G->firststt) {
+		for (int g = 0; g < MAX_INPUT; g++)
+		{
+			if (G->lastfiles[g] != G->files[g]) { isDif = true; break; }
+		}
 		if (isDif || G->laspectr != aspectr) {
 			for (j; j < i; j++) {
 				
@@ -529,7 +534,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	G->Stage = "Generated!";
 	loadingbar.setSize(sf::Vector2f(BAR_X, loadingbar.getSize().y));
 
-
+	mapClear = false;
 	
 
 	sf::Image capture;
@@ -558,9 +563,6 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	
 	G->overlay.setTexture(G->overlayT);
 	G->overlay2.setTexture(G->overlayT);
-
-	G->generated = true;
-	G->generating = false;
 
 	return ERROR_GEN_SUCCESS;
 }
@@ -772,6 +774,7 @@ void Generate::Thread(sf::Font* pfont) {
 			G->request = empty;
 			G->generated = true;
 			G->generating = false;
+			Render::SetPrev();
 			break;
 		case show_window:
 			Generate::doView(pfont);

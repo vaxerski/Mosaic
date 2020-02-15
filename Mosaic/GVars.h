@@ -48,4 +48,5 @@ public:
 	sf::Texture overlayT;
 	bool isInPrev;
 	bool clonesAutoMode;
+	std::map<std::tuple<int,int,int>, int> colorVortex; // B)
 };

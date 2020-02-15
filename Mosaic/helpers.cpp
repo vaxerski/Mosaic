@@ -42,7 +42,20 @@ extern high_resolution_clock::time_point timeorigin;
 extern high_resolution_clock::time_point frame;
 extern bool generated;
 
+extern bool isDif;
+bool mapClear = true;
+
 int Helpers::getNearest3D(sf::Color source, int scanRange) {
+	//now look there's some cool shit here
+
+	//but we need to null this shit if the composite changed =(
+	if (isDif && !mapClear){
+		G->colorVortex.clear(); mapClear = true;
+	}
+
+	if (G->colorVortex.count(std::make_tuple<int, int, int>((int)source.r, (int)source.g, (int)source.b)))
+		return G->colorVortex[std::tuple<int, int, int>((int)source.r, (int)source.g, (int)source.b)];
+
 	int leader = 0;
 	float distance = 1337;
 	float dis;
@@ -66,6 +79,8 @@ int Helpers::getNearest3D(sf::Color source, int scanRange) {
 			distance = dis;
 		}
 	}
+
+	G->colorVortex[std::tuple<int, int, int>((int)source.r, (int)source.g, (int)source.b)] = leader;
 
 	return leader;
 
