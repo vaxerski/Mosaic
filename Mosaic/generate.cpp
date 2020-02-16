@@ -195,7 +195,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		float rows = (double)G->sw / (double)((double)lw * (double)scale);
 		float cols = (double)G->sh / (double)((double)lh * (double)scale);
 
-		long long calc = rows * cols + 1000; //for safety 1000 :)
+		long long calc = rows * cols + 1000 + 1/scale; //for safety 1000 and 1/scale :)
 		maxclonesR = calc;
 	}
 
@@ -394,6 +394,7 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 	for (ij; ij < i; ij++) {
 		G->sprites[ij].setTexture(G->Textures[ij]);
 		G->sprites[ij].setScale(scale, scale);
+		G->sprites[ij].setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(lw, lh)));
 
 		
 		G->Stage = "Assigning sprites... " + std::to_string(ij + 1) + " of " + std::to_string(i + 1);

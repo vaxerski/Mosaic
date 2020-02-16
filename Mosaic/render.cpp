@@ -273,7 +273,7 @@ void Render::InitShader() {
 		S_gaussian.setUniform("blur_radius", sf::Vector2f(0.005f, 0));
 		S_gaussian.setUniform("blur_radius2", sf::Vector2f(0, 0.005f));
 	}
-	if (!S_gaussian.loadFromFile("resource/gaussianBlur.glsl", sf::Shader::Fragment)) {
+	if (!S_gaussian.loadFromFile("resource/gaussianBlur.hlsl", sf::Shader::Fragment)) {
 		MessageBox(NULL, TEXT("shader failed."), TEXT("Initializing error."), NULL);
 	}
 }
