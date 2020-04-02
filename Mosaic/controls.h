@@ -98,6 +98,7 @@ namespace drawing {
 	int drawExit(sf::RenderWindow* pwind);
 	int drawCheckbox(sf::RenderWindow* pwind, int id);
 	int drawComboBox(sf::RenderWindow* pwind, int id);
+	int drawComboBoxDrop(sf::RenderWindow* pwind, int id);
 }
 
 

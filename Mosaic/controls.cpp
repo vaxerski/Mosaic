@@ -22,10 +22,12 @@ std::string savepath;
 float scale = 0.01f;
 sf::Image rendered;
 
-extern std::unique_ptr<GVars> G;
 extern bool dScan;
 
 int aspectr = 0;
+int ditherin = 0;
+
+
 
 //creating
 
@@ -222,6 +224,22 @@ int drawing::drawComboBox(sf::RenderWindow* pwind, int id) {
 	pwind->draw(DropboxesD[id].box);
 	pwind->draw(DropboxesD[id].activetext);
 	pwind->draw(DropboxesD[id].capt);
+	return 1;
+}
+
+int drawing::drawComboBoxDrop(sf::RenderWindow* pwind, int id) { //so that the drop-down is over shit
+	if (id >= dropbs)
+		return -1;
+
+	int mx, my;
+	Helpers::GetCursorToWindow(&mx, &my, pwind);
+
+	int x, y, w, h;
+	x = Dropboxes[id].x;
+	y = Dropboxes[id].y;
+	w = 240;
+	h = 30;
+
 	if (Dropboxes[id].open) {
 		pwind->draw(DropboxesD[id].openBox);
 		for (int j = 0; j < Dropboxes[id].itemsN; j++) {
@@ -640,13 +658,31 @@ void butoncallbacks(int id, sf::Font* arg1, sf::RenderWindow* arg2, void* arg3, 
 		if (*reinterpret_cast<int*>(arg3) == -1) {
 			if (Dropboxes[ide].open)
 				Dropboxes[ide].open = false;
-			else
+			else {
+				for (int l = 0; l < dropbs; l++) {
+					Dropboxes[l].open = false;
+				}
 				Dropboxes[ide].open = true;
+			}
+				
+
 		}
 		else {
 			Dropboxes[ide].open = false;
 			Dropboxes[ide].selected = *reinterpret_cast<int*>(arg3);
-			aspectr = *reinterpret_cast<int*>(arg3);
+			switch (ide) {
+			case 0:
+				aspectr = *reinterpret_cast<int*>(arg3);
+				break;
+			case 1:
+				ditherin = *reinterpret_cast<int*>(arg3);
+				break;
+			default:
+
+				break;
+			}
+				
+
 		}
 		break;
 	}

@@ -46,6 +46,7 @@
 #pragma comment( lib, "gdiplus" )
 #include "render.h"
 #include "Generate.h"
+#include "GVars.h"
 
 using namespace std::filesystem;
 using namespace std::chrono;
@@ -60,6 +61,7 @@ Color TransformH(const Color& in, float H);
 namespace Helpers {
 	int getNearest3D(sf::Color source, int scanRange);
 	int GetPreciseNearest3D(preciseMeasure in, int scanRange);
+	mfColor normalize(mfColor in);
 	std::wstring s2ws(const std::string& s);
 	int calculateScreenshot();
 	void GetCursorToWindow(int* x, int* y, sf::RenderWindow* pwnd);

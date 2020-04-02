@@ -38,7 +38,7 @@
 extern std::mutex mu;
 
 
-extern std::unique_ptr<GVars> G;
+
 extern sf::Text prevWarn;
 extern std::string savepath;
 extern sf::RectangleShape loadingbarbg;
@@ -47,6 +47,7 @@ extern sf::RenderWindow* pWind;
 extern float scale;
 extern bool dScan;
 extern int aspectr;
+extern int ditherin;
 extern bool mapClear;
 
 int j = 1;
@@ -62,9 +63,6 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 	G->Stage = "Starting...";
 	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 15, loadingbar.getSize().y));
-
-	
-
 	
 
 	int i = 1;
@@ -491,6 +489,8 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 
 			clones[counter].setPosition(rowX * scale * lw, rowY * scale * lh);
 
+			G->clonesInfo[std::pair<int, int>(rowX, rowY)] = { (int)counter, measure, Helpers::getNearest3D(measure, i), rowX * scale * lw, rowY * scale * lh };
+
 			rowX++;
 			counter++;
 			cumter++;
@@ -524,6 +524,77 @@ int Generate::generateImage(std::string comp, std::string sourcp, sf::Image* ima
 		}
 
 
+	}
+
+	G->Stage = "Dithering...";
+	loadingbar.setSize(sf::Vector2f(BAR_X * 0.75 * 1 / 1.1f, loadingbar.getSize().y));
+
+	if (ditherin == 1) { //Floyd-Steinberg
+		for (int kk = 0; kk < (double)G->sh / ((double)scale * (double)lh); kk++) { //kk = y
+			for (int kkk = 0; kkk < (double)G->sw / ((double)scale * (double)lw); kkk++) { //kkk = x
+
+				
+				cloneinfo sprite = G->clonesInfo[std::pair<int, int>(kkk + 1, kk)];
+				if (kkk + 1 > G->sw) continue;
+				if (sprite.posX > G->sw || sprite.posX < 0 || sprite.posY > G->sh || sprite.posY < 0 || sprite.count > counter) continue;
+				mfColor oldCol = sprite.color;
+				mfColor newCol = G->avg[sprite.leader];
+
+				float errorR, errorG, errorB, r, g, b;
+
+				errorR = oldCol.r - newCol.r;
+				errorG = oldCol.g - newCol.g;
+				errorB = oldCol.b - newCol.b;
+
+				clones[sprite.count] = G->sprites[Helpers::getNearest3D(Helpers::normalize(mfColor(oldCol.r + (errorR * 7.f / 16.f), oldCol.g + (errorG * 7.f / 16.f), oldCol.b + (errorB * 7.f / 16.f))), i)];
+				clones[sprite.count].setPosition(sprite.posX, sprite.posY);
+
+				//setp 2
+
+				sprite = G->clonesInfo[std::pair<int, int>(kkk - 1, kk + 1)];
+				if (kkk - 1 < 0 || kk + 1 > G->sh) continue;
+				if (sprite.posX > G->sw || sprite.posX < 0 || sprite.posY > G->sh || sprite.posY < 0 || sprite.count > counter) continue;
+				oldCol = sprite.color;
+				newCol = G->avg[sprite.leader];
+
+				errorR = oldCol.r - newCol.r;
+				errorG = oldCol.g - newCol.g;
+				errorB = oldCol.b - newCol.b;
+
+				clones[sprite.count] = G->sprites[Helpers::getNearest3D(Helpers::normalize(mfColor(oldCol.r + (errorR * 7.f / 16.f), oldCol.g + (errorG * 7.f / 16.f), oldCol.b + (errorB * 7.f / 16.f))), i)];
+				clones[sprite.count].setPosition(sprite.posX, sprite.posY);
+
+				//setp 3
+
+				sprite = G->clonesInfo[std::pair<int, int>(kkk, kk + 1)];
+				if (kk + 1 > G->sh) continue;
+				if (sprite.posX > G->sw || sprite.posX < 0 || sprite.posY > G->sh || sprite.posY < 0 || sprite.count > counter) continue;
+				oldCol = sprite.color;
+				newCol = G->avg[sprite.leader];
+
+				errorR = oldCol.r - newCol.r;
+				errorG = oldCol.g - newCol.g;
+				errorB = oldCol.b - newCol.b;
+
+				clones[sprite.count] = G->sprites[Helpers::getNearest3D(Helpers::normalize(mfColor(oldCol.r + (errorR * 7.f / 16.f), oldCol.g + (errorG * 7.f / 16.f), oldCol.b + (errorB * 7.f / 16.f))), i)];
+				clones[sprite.count].setPosition(sprite.posX, sprite.posY);
+
+				//setp 4
+
+				sprite = G->clonesInfo[std::pair<int, int>(kkk + 1, kk + 1)];
+				if (kk + 1 > G->sh || kkk + 1 > G->sw) continue;
+				if (sprite.posX > G->sw || sprite.posX < 0 || sprite.posY > G->sh || sprite.posY < 0 || sprite.count > counter) continue;
+				oldCol = sprite.color;
+				newCol = G->avg[sprite.leader];
+
+				errorR = oldCol.r - newCol.r;
+				errorG = oldCol.g - newCol.g;
+				errorB = oldCol.b - newCol.b;
+
+				clones[sprite.count] = G->sprites[Helpers::getNearest3D(Helpers::normalize(mfColor(oldCol.r + (errorR * 7.f / 16.f), oldCol.g + (errorG * 7.f / 16.f), oldCol.b + (errorB * 7.f / 16.f))), i)];
+				clones[sprite.count].setPosition(sprite.posX, sprite.posY);
+			}
+		}
 	}
 
 	G->genWin.create(sf::VideoMode(G->sw, G->sh), "Generating", sf::Style::None);

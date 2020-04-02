@@ -65,6 +65,7 @@ high_resolution_clock::time_point timeorigin;
 high_resolution_clock::time_point frame;
 
 std::unique_ptr<GVars> G;
+
 std::mutex mu;
 
 int main(int argc, char* argv[]) {

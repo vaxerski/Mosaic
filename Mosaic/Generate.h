@@ -31,3 +31,32 @@ enum requests {
 	exit_thread,
 };
 
+struct cloneinfo {
+	int count;
+	sf::Color color;
+	int leader;
+	float posX, posY;
+};
+
+struct mfColor {
+	float r, g, b;
+	int alpha = 255;
+
+	mfColor(sf::Color c) {
+		r = c.r;
+		g = c.g;
+		b = c.b;
+		alpha = c.a;
+	}
+
+	mfColor(int ra, int ga, int ba, float a = 255) {
+		r = ra;
+		g = ga;
+		b = ba;
+		alpha = a;
+	}
+
+	operator sf::Color() const {
+		return sf::Color(r, g, b, alpha);
+	}
+};

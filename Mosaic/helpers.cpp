@@ -21,7 +21,6 @@
 #include "GVars.h"
 
 extern std::mutex mu;
-extern std::unique_ptr<GVars> G;
 
 int lmx, lmy;
 bool dragging = false;
@@ -140,6 +139,16 @@ int Helpers::GetPreciseNearest3D(preciseMeasure in, int scanRange) {
 		}
 	}
 	return leader;
+}
+
+mfColor Helpers::normalize(mfColor in) {
+	if (in.r < 0) in.r = 0;
+	if (in.r > 255) in.r = 255;
+	if (in.g < 0) in.g = 0;
+	if (in.g > 255) in.g = 255;
+	if (in.b < 0) in.b = 0;
+	if (in.b > 255) in.b = 255;
+	return in;
 }
 
 std::wstring Helpers::s2ws(const std::string& s)

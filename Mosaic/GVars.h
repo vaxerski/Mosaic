@@ -4,6 +4,8 @@
 #include "controls.h"
 #include "Generate.h"
 
+
+
 class GVars {
 public:
 	int request = 0;
@@ -49,4 +51,7 @@ public:
 	bool isInPrev;
 	bool clonesAutoMode;
 	std::map<std::tuple<int,int,int>, int> colorVortex; // B)
+	std::map<std::pair<int, int>, cloneinfo> clonesInfo;
 };
+
+extern std::unique_ptr<GVars> G;

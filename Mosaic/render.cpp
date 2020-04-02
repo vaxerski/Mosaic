@@ -14,7 +14,6 @@
 #include <future>
 #include "GVars.h"
 
-extern std::unique_ptr<GVars> G;
 extern std::mutex mu;
 
 static int framecount = 0;
@@ -226,6 +225,11 @@ void Render::GUI(sf::RenderWindow* pwind) {
 		if (drawing::drawComboBox(pwind, i) == -1) break;
 	}
 
+	//drops down drop
+	for (int i = 0; i < DROPBOXES; i++) {
+		if (drawing::drawComboBoxDrop(pwind, i) == -1) break;
+	}
+
 	//exit
 	drawing::drawExit(pwind);
 }
@@ -246,7 +250,7 @@ void Render::DebugInfo(sf::RenderWindow* pwind, double frametime) {
 		debuginfo.setString("Mosaic 2 - LIDL visuals edition | mx: " + std::to_string(mx) + " my: " + std::to_string(my) + " fps: " + std::to_string(lastframe));
 	}
 
-	watermark.setString("Mosaic 2.3a. Report bugs/suggestions at GitHub.");
+	watermark.setString("Mosaic 2.4. Report bugs/suggestions at GitHub.");
 	
 	pwind->draw(watermark);
 	pwind->draw(debuginfo);
@@ -261,8 +265,8 @@ void Render::InitUI(sf::Font* font) {
 	creating::CreateSlider(1010, 270, 240, "Max clones", font, false, 10000, 10000, 50000000);
 	creating::CreateSlider(1010, 310, 240, "Noise amount", font, false, 0.f, 0.f, 15.f);
 	creating::CreateSlider(1010, 350, 240, "Overlay Alpha", font, false, 0.f, 0.f, 255.f);
-	//creating::CreateCheckbox(1010, 380, 0, "Advanced Scan (slower!)", font, &dScan, true);
 	creating::CreateDropbox(1010, 390, 3, font, new std::string[MAX_ITEMS]{"16:9", "4:3", "1:1"}, 0, "Clone aspect ratio");
+	creating::CreateDropbox(1010, 430, 2, font, new std::string[MAX_ITEMS]{ "None","Floyd-Steinberg (beta)" }, 0, "Dithering");
 	creating::CreateExit(font);
 }
 
